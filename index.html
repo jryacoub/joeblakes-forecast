@@ -10,6 +10,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .topbar{background:#3D4A35;color:#EDE0CC;padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
 .topbar h1{font-size:13px;font-weight:500;letter-spacing:0.06em}
 .meta{font-size:11px;opacity:0.7}
+.tabs{background:#2e3a28;display:flex;padding:0 24px}
+.tab{padding:10px 18px;font-size:12px;color:#EDE0CC;opacity:0.6;cursor:pointer;border-bottom:2px solid transparent;letter-spacing:0.04em}
+.tab:hover{opacity:0.9}
+.tab.active{opacity:1;border-bottom:2px solid #C9A84C}
 .wrap{max-width:1400px;margin:0 auto;padding:20px 16px}
 .controls{display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap}
 .controls label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
@@ -44,6 +48,30 @@ tr:hover td{background:#faf9f6}
 .stepper input{border:none;width:42px;height:28px;text-align:center;font-size:13px;font-weight:600;color:#1a1a1a;font-family:inherit;background:#fff;-moz-appearance:textfield}
 .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none}
 .ld{text-align:center;padding:3rem;color:#888}
+.card{background:#fff;border:0.5px solid #e0ddd5;border-radius:8px;padding:24px;margin-bottom:24px;max-width:800px}
+.card h2{font-size:13px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+.card .sub{font-size:11px;color:#888;margin-bottom:20px}
+.drop{border:2px dashed #c8c4bc;border-radius:6px;padding:32px;text-align:center;cursor:pointer;transition:all 0.2s;background:#faf9f6}
+.drop:hover,.drop.over{border-color:#3D4A35;background:#f0ede5}
+.drop .icon{font-size:28px;margin-bottom:8px}
+.drop .label{font-size:13px;color:#555;margin-bottom:4px}
+.drop .hint{font-size:11px;color:#aaa}
+input[type=file]{display:none}
+.ubtn{display:inline-block;padding:8px 20px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;background:#3D4A35;color:#EDE0CC}
+.ubtn:hover{background:#4a5a40}
+.ubtn:disabled{background:#ccc;cursor:not-allowed}
+.preview{margin-top:16px;overflow-x:auto}
+.ustatus{margin-top:16px;padding:10px 14px;border-radius:6px;font-size:12px}
+.ustatus.success{background:#e8f3dc;color:#3a6910;border:0.5px solid #b8d99a}
+.ustatus.error{background:#fce8e8;color:#a02c2c;border:0.5px solid #f0a0a0}
+.ustatus.info{background:#f0ede5;color:#555;border:0.5px solid #c8c4bc}
+.mapping{margin-top:16px}
+.mapping label{display:block;font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em}
+.mapping select{width:100%;padding:6px 10px;border:0.5px solid #ccc;border-radius:5px;font-size:12px;font-family:inherit;background:#fff;margin-bottom:12px}
+.mrow{display:flex;gap:12px;margin-bottom:12px}
+.mrow>div{flex:1}
+.uactions{margin-top:16px;display:flex;gap:8px;align-items:center}
+.uprogress{font-size:11px;color:#888}
 </style>
 </head>
 <body>
@@ -51,6 +79,13 @@ tr:hover td{background:#faf9f6}
   <h1>JOE BLAKE'S &middot; WEST ONE &middot; ORDER INTELLIGENCE</h1>
   <div class="meta" id="meta"></div>
 </div>
+<div class="tabs">
+  <div class="tab active" id="tab-dashboard" onclick="showTab('dashboard')">Dashboard</div>
+  <div class="tab" id="tab-import" onclick="showTab('import')">Import Data</div>
+</div>
+
+<!-- DASHBOARD TAB -->
+<div id="pane-dashboard">
 <div class="wrap">
   <div class="controls">
     <label>Week</label>
@@ -63,18 +98,82 @@ tr:hover td{background:#faf9f6}
   </div>
   <div id="content" class="ld">Loading...</div>
 </div>
+</div>
+
+<!-- IMPORT TAB -->
+<div id="pane-import" style="display:none">
+<div class="wrap">
+  <div class="card">
+    <h2>Square Sales Export</h2>
+    <div class="sub">Upload a Square POS CSV to update sales data. Existing rows for the same dates will be overwritten.</div>
+    <div class="drop" id="sales-drop" onclick="document.getElementById('sales-file').click()">
+      <div class="icon">📊</div>
+      <div class="label">Drop Square CSV here or click to browse</div>
+      <div class="hint">Expected columns: Date, Item Name, Qty / Units Sold</div>
+    </div>
+    <input type="file" id="sales-file" accept=".csv">
+    <div id="sales-mapping" class="mapping" style="display:none">
+      <div class="mrow">
+        <div><label>Date column</label><select id="s-date"></select></div>
+        <div><label>SKU / Item name column</label><select id="s-sku"></select></div>
+        <div><label>Qty sold column</label><select id="s-qty"></select></div>
+      </div>
+      <div id="sales-preview" class="preview"></div>
+    </div>
+    <div id="sales-status"></div>
+    <div class="uactions">
+      <button class="ubtn" id="sales-upload-btn" style="display:none" onclick="uploadData('sales')">Upload to Database</button>
+      <span class="uprogress" id="sales-progress"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Edify Orders Export</h2>
+    <div class="sub">Upload an Edify PO CSV to update orders data. Existing rows for the same dates will be overwritten.</div>
+    <div class="drop" id="orders-drop" onclick="document.getElementById('orders-file').click()">
+      <div class="icon">📦</div>
+      <div class="label">Drop Edify CSV here or click to browse</div>
+      <div class="hint">Expected columns: Delivery Date, Product / Item, Quantity</div>
+    </div>
+    <input type="file" id="orders-file" accept=".csv">
+    <div id="orders-mapping" class="mapping" style="display:none">
+      <div class="mrow">
+        <div><label>Date column</label><select id="o-date"></select></div>
+        <div><label>SKU / Product name column</label><select id="o-sku"></select></div>
+        <div><label>Quantity column</label><select id="o-qty"></select></div>
+      </div>
+      <div id="orders-preview" class="preview"></div>
+    </div>
+    <div id="orders-status"></div>
+    <div class="uactions">
+      <button class="ubtn" id="orders-upload-btn" style="display:none" onclick="uploadData('orders')">Upload to Database</button>
+      <span class="uprogress" id="orders-progress"></span>
+    </div>
+  </div>
+</div>
+</div>
+
 <script>
 var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnaW56eG9iaW5ycWRkYmJ1ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NDk1NzEsImV4cCI6MjA4NzQyNTU3MX0.GXsPlQN0oG7BcJHm-_-1vTHoIf84IF5lghYoOg-_7CQ';
 var BASE='https://uginzxobinrqddbbuenu.supabase.co/rest/v1';
 var H={apikey:KEY,Authorization:'Bearer '+KEY};
+var UH={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};
 var DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+var WDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Glazed','Custard','Vegan Lotus','Pink Sprinkle','Chocolate Sprinkle','Tiramisu','Cinnamon Sugar','Honeycomb','Lemon','Jaffa Cake'];
 var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata','Cinnamon Bun'];
+var SKU_MAP={'glazed chocolate':'Chocolate Sprinkle','chocolate glazed':'Chocolate Sprinkle','choc glazed':'Chocolate Sprinkle','choc sprinkle':'Chocolate Sprinkle','chocolate sprinkle doughnut':'Chocolate Sprinkle','nutella':'Nutella','pistachio':'Pistachio','kinder bueno':'Kinder Bueno','red velvet':'Red Velvet','vegan jam':'Vegan Jam','glazed':'Glazed','custard':'Custard','vegan lotus':'Vegan Lotus','pink sprinkle':'Pink Sprinkle','chocolate sprinkle':'Chocolate Sprinkle','tiramisu':'Tiramisu','cinnamon sugar':'Cinnamon Sugar','honeycomb':'Honeycomb','lemon':'Lemon','jaffa cake':'Jaffa Cake','almond croissant':'Almond Croissant','plain croissant':'Plain Croissant','plain nata':'Plain Nata','pain au chocolat':'Pain Au Chocolat','pain aux raisin':'Pain Aux Raisin','raspberry nata':'Raspberry Nata','cinnamon bun':'Cinnamon Bun'};
+var uploadState={sales:{rows:[],headers:[]},orders:{rows:[],headers:[]}};
 
-async function get(p){
-  try{var r=await fetch(BASE+p,{headers:H});return await r.json();}
-  catch(e){return[];}
+function showTab(t){
+  document.getElementById('pane-dashboard').style.display=t==='dashboard'?'block':'none';
+  document.getElementById('pane-import').style.display=t==='import'?'block':'none';
+  document.getElementById('tab-dashboard').className='tab'+(t==='dashboard'?' active':'');
+  document.getElementById('tab-import').className='tab'+(t==='import'?' active':'');
 }
+
+// DASHBOARD
+async function get(p){try{var r=await fetch(BASE+p,{headers:H});return await r.json();}catch(e){return[];}}
 function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
 function addDays(d,n){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
 function fmt(d){return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
@@ -88,7 +187,6 @@ function avgForSku(sku,rM){
   var vals=Object.values(rM[sku]);
   return vals.reduce(function(s,v){return s+v.avg;},0)/vals.length;
 }
-
 function init(){
   var today=new Date().toISOString().split('T')[0];
   var mon=getMonday(today);
@@ -108,7 +206,6 @@ function init(){
   });
   load();
 }
-
 async function load(){
   var mon=document.getElementById('week-pick').value;
   if(!mon) return;
@@ -118,46 +215,33 @@ async function load(){
   var lmon=addDays(mon,-7);
   var lsun=addDays(sun,-7);
   document.getElementById('meta').textContent='w/c '+fmt(mon)+' \u2013 '+fmt(sun);
-
   var orders=await get('/jb_orders?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var lorders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
   var lsales=await get('/jb_sales?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
   var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold,trend_factor,avg_waste_edify&limit=1000');
-
   var oM={},sM={},loM={},lsM={},rM={};
   orders.forEach(function(r){if(!oM[r.sku])oM[r.sku]={};oM[r.sku][r.date]=+r.qty;});
   sales.forEach(function(r){if(!sM[r.sku])sM[r.sku]={};sM[r.sku][r.date]=+r.qty;});
   lorders.forEach(function(r){if(!loM[r.sku])loM[r.sku]={};loM[r.sku][r.date]=+r.qty;});
   lsales.forEach(function(r){if(!lsM[r.sku])lsM[r.sku]={};lsM[r.sku][r.date]=+r.qty;});
   recs.forEach(function(r){if(!rM[r.sku])rM[r.sku]={};rM[r.sku][r.dow]={rec:+r.rec_edify,avg:+r.avg_sold,tf:+r.trend_factor,waste:+r.avg_waste_edify};});
-
   var allSkus=Object.keys(Object.assign({},oM,rM,loM));
-
-  function sortByAvg(skus){
-    return skus.sort(function(a,b){return avgForSku(b,rM)-avgForSku(a,rM);});
-  }
-
+  function sortByAvg(skus){return skus.sort(function(a,b){return avgForSku(b,rM)-avgForSku(a,rM);});}
   var dSkus=sortByAvg(allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}));
   var pSkus=sortByAvg(allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}));
   if(!allSkus.length){document.getElementById('content').innerHTML='<div class="ld">No data</div>';return;}
-
   function buildSection(title,sub,skus){
     if(!skus.length) return '';
-    var dh='';
-    var sh='';
+    var dh='';var sh='';
     DAYS.forEach(function(day,i){
       var date=addDays(mon,i);
       var past=date<today;
       var cols=past?7:6;
       dh+='<th colspan="'+cols+'" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
-      if(past){
-        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>Trend</th><th>&Delta; Rec</th>';
-      } else {
-        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Avg Sold</th><th>Trend</th><th>Avg Waste</th><th>Mgr Order</th>';
-      }
+      if(past) sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>Trend</th><th>&Delta; Rec</th>';
+      else sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Avg Sold</th><th>Trend</th><th>Avg Waste</th><th>Mgr Order</th>';
     });
-
     var rows=skus.map(function(sku){
       var cells='';
       DAYS.forEach(function(day,i){
@@ -186,14 +270,11 @@ async function load(){
       });
       return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
     }).join('');
-
     return '<div class="section"><div class="section-title">'+title+' <small>'+sub+'</small></div><div class="tbl-wrap"><table><thead><tr><th class="skuh" rowspan="2" style="min-width:140px;vertical-align:middle">SKU</th>'+dh+'</tr><tr>'+sh+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   }
-
   document.getElementById('content').innerHTML=
     buildSection('DOUGHNUTS \u2014 RED ROSE','Supplier: Red Rose Bakery',dSkus)+
     buildSection('PASTRIES \u2014 GALETA','Supplier: Galeta',pSkus);
-
   document.getElementById('content').addEventListener('click',function(e){
     var btn=e.target.closest('button[data-dir]');
     if(!btn) return;
@@ -202,6 +283,123 @@ async function load(){
   });
 }
 
+// IMPORT
+function normSku(raw){var k=(raw||'').toLowerCase().trim().replace(/\s+/g,' ');return SKU_MAP[k]||raw;}
+function parseDate(raw){
+  if(!raw) return null;
+  var d=new Date(raw);
+  if(!isNaN(d)) return d.toISOString().split('T')[0];
+  var m=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  return null;
+}
+function parseCSV(text){
+  var lines=text.trim().split('\n');
+  var headers=lines[0].split(',').map(function(h){return h.replace(/"/g,'').trim();});
+  var rows=lines.slice(1).map(function(line){
+    var cols=[];var cur='';var inq=false;
+    for(var i=0;i<line.length;i++){
+      if(line[i]==='"') inq=!inq;
+      else if(line[i]===','&&!inq){cols.push(cur.trim());cur='';}
+      else cur+=line[i];
+    }
+    cols.push(cur.trim());
+    var obj={};headers.forEach(function(h,i){obj[h]=cols[i]||'';});
+    return obj;
+  }).filter(function(r){return Object.values(r).some(function(v){return v;});});
+  return {headers,rows};
+}
+function setupDrop(type){
+  var drop=document.getElementById(type+'-drop');
+  var input=document.getElementById(type+'-file');
+  drop.addEventListener('dragover',function(e){e.preventDefault();drop.classList.add('over');});
+  drop.addEventListener('dragleave',function(){drop.classList.remove('over');});
+  drop.addEventListener('drop',function(e){e.preventDefault();drop.classList.remove('over');var f=e.dataTransfer.files[0];if(f) handleFile(type,f);});
+  input.addEventListener('change',function(){if(this.files[0]) handleFile(type,this.files[0]);});
+}
+function handleFile(type,file){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var parsed=parseCSV(e.target.result);
+    uploadState[type]=parsed;
+    var prefix=type==='sales'?'s':'o';
+    ['date','sku','qty'].forEach(function(field){
+      var sel=document.getElementById(prefix+'-'+field);
+      sel.innerHTML='';
+      parsed.headers.forEach(function(h){
+        var opt=document.createElement('option');
+        opt.value=h;opt.textContent=h;
+        var hl=h.toLowerCase();
+        if(field==='date'&&(hl.includes('date')||hl.includes('day'))) opt.selected=true;
+        if(field==='sku'&&(hl.includes('item')||hl.includes('sku')||hl.includes('product')||hl.includes('name'))) opt.selected=true;
+        if(field==='qty'&&(hl.includes('qty')||hl.includes('unit')||hl.includes('quant')||hl.includes('sold'))) opt.selected=true;
+        sel.appendChild(opt);
+      });
+    });
+    document.getElementById(type+'-mapping').style.display='block';
+    document.getElementById(type+'-upload-btn').style.display='inline-block';
+    showPreview(type);
+    setStatus(type,'info','File loaded: '+parsed.rows.length+' rows. Check column mapping then click Upload.');
+  };
+  reader.readAsText(file);
+}
+function showPreview(type){
+  var prefix=type==='sales'?'s':'o';
+  var dateCol=document.getElementById(prefix+'-date').value;
+  var skuCol=document.getElementById(prefix+'-sku').value;
+  var qtyCol=document.getElementById(prefix+'-qty').value;
+  var rows=uploadState[type].rows.slice(0,5);
+  var html='<table><thead><tr><th>Date</th><th>SKU (mapped)</th><th>Qty</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var d=parseDate(r[dateCol])||r[dateCol];
+    var s=normSku(r[skuCol]);
+    html+='<tr><td>'+d+'</td><td>'+s+'</td><td>'+r[qtyCol]+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  document.getElementById(type+'-preview').innerHTML=html;
+}
+['s-date','s-sku','s-qty'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){showPreview('sales');});});
+['o-date','o-sku','o-qty'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){showPreview('orders');});});
+async function uploadData(type){
+  var prefix=type==='sales'?'s':'o';
+  var dateCol=document.getElementById(prefix+'-date').value;
+  var skuCol=document.getElementById(prefix+'-sku').value;
+  var qtyCol=document.getElementById(prefix+'-qty').value;
+  var table=type==='sales'?'jb_sales':'jb_orders';
+  var btn=document.getElementById(type+'-upload-btn');
+  btn.disabled=true;
+  var payload=[];
+  uploadState[type].rows.forEach(function(r){
+    var date=parseDate(r[dateCol]);
+    var sku=normSku(r[skuCol]);
+    var qty=parseFloat(r[qtyCol]);
+    if(!date||!sku||isNaN(qty)||qty<0) return;
+    var dow=WDAYS[new Date(date+'T12:00:00').getDay()];
+    payload.push({date,sku,dow,qty});
+  });
+  if(!payload.length){setStatus(type,'error','No valid rows found. Check column mapping.');btn.disabled=false;return;}
+  var batches=[];
+  for(var i=0;i<payload.length;i+=100) batches.push(payload.slice(i,i+100));
+  var done=0;
+  setStatus(type,'info','Uploading '+payload.length+' rows...');
+  for(var b=0;b<batches.length;b++){
+    try{
+      var r=await fetch(BASE+'/'+table,{method:'POST',headers:UH,body:JSON.stringify(batches[b])});
+      if(!r.ok){var err=await r.text();setStatus(type,'error','Upload failed: '+err);btn.disabled=false;return;}
+      done+=batches[b].length;
+      document.getElementById(type+'-progress').textContent=done+' / '+payload.length+' rows uploaded...';
+    }catch(e){setStatus(type,'error','Network error: '+e.message);btn.disabled=false;return;}
+  }
+  setStatus(type,'success','Done! '+payload.length+' rows uploaded. Dashboard will reflect updated data immediately.');
+  document.getElementById(type+'-progress').textContent='';
+  btn.disabled=false;
+}
+function setStatus(type,cls,msg){
+  var el=document.getElementById(type+'-status');
+  el.className='ustatus '+cls;el.textContent=msg;
+}
+setupDrop('sales');
+setupDrop('orders');
 init();
 </script>
 </body>
