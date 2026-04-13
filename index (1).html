@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Joe Blake's West One</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a}
+.topbar{background:#3D4A35;color:#EDE0CC;padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.topbar h1{font-size:15px;font-weight:500}
+.wk{font-size:12px;opacity:0.7}
+.container{max-width:960px;margin:0 auto;padding:20px 16px}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.mc{background:#fff;border-radius:8px;padding:14px 16px;border:0.5px solid #e0ddd5}
+.mc .lb{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
+.mc .vl{font-size:22px;font-weight:500;color:#3D4A35}
+.controls{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.days{display:flex;gap:6px;flex-wrap:wrap}
+.db{font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid #ccc;background:#fff;cursor:pointer;font-family:inherit}
+.db.active{background:#3D4A35;color:#EDE0CC;border-color:#3D4A35}
+.tog{display:flex;gap:4px;align-items:center}
+.tog .sl{font-size:11px;color:#888;margin-right:4px}
+.tb{font-size:11px;padding:4px 10px;border-radius:4px;border:0.5px solid #ccc;background:#fff;cursor:pointer;font-family:inherit}
+.tb.active{background:#3D4A35;color:#EDE0CC;border-color:#3D4A35}
+.tw{background:#fff;border-radius:8px;border:0.5px solid #e0ddd5;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;padding:8px 12px;text-align:left;border-bottom:0.5px solid #e8e5dd;background:#faf9f6;white-space:nowrap}
+td{padding:8px 12px;border-bottom:0.5px solid #f0ede5}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#faf9f6}
+.rec{font-weight:600;color:#3D4A35;font-size:15px}
+.badge{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500}
+.up{background:#e8f3dc;color:#3a6910}
+.dn{background:#fce8e8;color:#a02c2c}
+.fl{background:#f0ede5;color:#888}
+.ld{text-align:center;padding:3rem;color:#888;font-size:14px}
+@media(max-width:500px){.meta{grid-template-columns:1fr 1fr}.mc .vl{font-size:18px}th,td{font-size:11px;padding:6px 8px}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>Joe Blake's &middot; West One forecast</h1>
+  <span class="wk" id="wk"></span>
+</div>
+<div class="container">
+  <div class="meta">
+    <div class="mc"><div class="lb">SKUs tracked</div><div class="vl" id="ms">&#8212;</div></div>
+    <div class="mc"><div class="lb">Avg trend</div><div class="vl" id="mt">&#8212;</div></div>
+    <div class="mc"><div class="lb">Rec source</div><div class="vl" id="mr">Edify</div></div>
+  </div>
+  <div class="controls">
+    <div class="days" id="days"></div>
+    <div class="tog">
+      <span class="sl">Source</span>
+      <button class="tb active" id="be" onclick="setR('edify')">Edify</button>
+      <button class="tb" id="bi" onclick="setR('implied')">Implied</button>
+    </div>
+  </div>
+  <div class="tw"><div id="ct" class="ld">Loading&#8230;</div></div>
+</div>
+<script>
+var SB_URL = 'https://uginzxobinrqddbbuenu.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnaW56eG9iaW5ycWRkYmJ1ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NDk1NzEsImV4cCI6MjA4NzQyNTU3MX0.GXsPlQN0oG7BcJHm-_-1vTHoIf84IF5lghYoOg-_7CQ';
+var DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+var data = [], dow = 'Monday', rec = 'edify';
+
+async function load() {
+  var res = await fetch(SB_URL + '/rest/v1/forecast?select=sku,dow,avg_sold,trended_avg,trend_factor,avg_waste_edify,avg_waste_implied,rec_edify,rec_implied&order=sku', {
+    headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Accept-Profile': 'joeblakes' }
+  });
+  data = await res.json();
+  init();
+}
+
+function init() {
+  var skus = data.map(function(d){return d.sku;}).filter(function(v,i,a){return a.indexOf(v)===i;});
+  document.getElementById('ms').textContent = skus.length;
+  var avg = data.reduce(function(s,d){return s+parseFloat(d.trend_factor);},0) / data.length;
+  document.getElementById('mt').textContent = avg.toFixed(2) + 'x';
+  var now = new Date(), mon = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay()+6)%7));
+  var sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  var fmt = function(d){return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});};
+  document.getElementById('wk').textContent = 'w/c ' + fmt(mon) + ' - ' + fmt(sun);
+  var dc = document.getElementById('days');
+  DAYS.forEach(function(d) {
+    var b = document.createElement('button');
+    b.className = 'db' + (d===dow?' active':'');
+    b.textContent = d.slice(0,3);
+    b.onclick = function() {
+      dow = d; render();
+      dc.querySelectorAll('.db').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+    };
+    dc.appendChild(b);
+  });
+  render();
+}
+
+function setR(t) {
+  rec = t;
+  document.getElementById('be').classList.toggle('active', t==='edify');
+  document.getElementById('bi').classList.toggle('active', t==='implied');
+  document.getElementById('mr').textContent = t==='edify' ? 'Edify' : 'Implied';
+  render();
+}
+
+function render() {
+  var rows = data.filter(function(d){return d.dow===dow;}).sort(function(a,b){return a.sku<b.sku?-1:1;});
+  if (!rows.length) { document.getElementById('ct').innerHTML='<div class="ld">No data</div>'; return; }
+  var rc = rec==='edify'?'rec_edify':'rec_implied';
+  var wc = rec==='edify'?'avg_waste_edify':'avg_waste_implied';
+  var h = '<table><thead><tr><th>SKU</th><th>Avg sold</th><th>Trended</th><th>Trend</th><th>Avg waste</th><th>Order qty</th></tr></thead><tbody>';
+  rows.forEach(function(r) {
+    var tf = parseFloat(r.trend_factor);
+    var bc = tf>1.05?'up':tf<0.95?'dn':'fl';
+    var bt = tf>1.05?'up '+((tf-1)*100).toFixed(0)+'%':tf<0.95?'dn '+((1-tf)*100).toFixed(0)+'%':'flat';
+    h += '<tr><td>'+r.sku+'</td><td>'+parseFloat(r.avg_sold).toFixed(1)+'</td><td>'+parseFloat(r.trended_avg).toFixed(1)+'</td><td><span class="badge '+bc+'">'+bt+'</span></td><td>'+parseFloat(r[wc]).toFixed(1)+'</td><td class="rec">'+r[rc]+'</td></tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById('ct').innerHTML = h;
+}
+
+load();
+</script>
+</body>
+</html>
