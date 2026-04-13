@@ -39,7 +39,9 @@ tr:hover td{background:#faf9f6}
 .bup{background:#e8f3dc;color:#3a6910}
 .bdn{background:#fce8e8;color:#a02c2c}
 .bfl{background:#f0ede5;color:#888}
-.whi{color:#a02c2c}
+.wlo{color:#3a6910;font-weight:600}
+.wmd{color:#b07800;font-weight:600}
+.whi{color:#a02c2c;font-weight:600}
 .wok{color:#888}
 .lw{color:#aaa;font-size:11px}
 .stepper{display:flex;align-items:center;border:0.5px solid #c8c4bc;border-radius:5px;overflow:hidden;width:90px;margin:0 auto}
@@ -127,9 +129,9 @@ input[type=file]{display:none}
     <label>Week</label>
     <select id="week-pick" onchange="load()"></select>
     <div class="legend">
-      <span><span class="dot" style="background:#3a6910"></span>Over-ordered vs rec</span>
-      <span><span class="dot" style="background:#a02c2c"></span>Under-ordered vs rec</span>
-      <span><span class="dot" style="background:#f0a500"></span>High waste</span>
+      <span><span class="dot" style="background:#3a6910"></span>Waste &lt;10%</span>
+      <span><span class="dot" style="background:#b07800"></span>Waste 10–20%</span>
+      <span><span class="dot" style="background:#a02c2c"></span>Waste &gt;20%</span>
     </div>
   </div>
   <div id="content" class="ld">Loading...</div>
@@ -139,11 +141,11 @@ input[type=file]{display:none}
 <div id="pane-chat" style="display:none">
 <div class="wrap">
   <div class="chat-wrap">
-    <div class="chat-context"><strong>Context:</strong> AI has access to live forecast data, 8w &amp; 4w trends, waste, recs, and this week's orders &amp; sales.</div>
+    <div class="chat-context"><strong>Context:</strong> AI has access to live forecast data, 8w &amp; 4w trends, waste rate %, smart recs, and this week's orders &amp; sales.</div>
     <div class="full-suggestions">
       <div class="full-sug" onclick="askFull(this)">Which SKUs should I pull back on?</div>
       <div class="full-sug" onclick="askFull(this)">What's trending up this week?</div>
-      <div class="full-sug" onclick="askFull(this)">Where is waste highest?</div>
+      <div class="full-sug" onclick="askFull(this)">Where is waste rate highest?</div>
       <div class="full-sug" onclick="askFull(this)">What should I order more of on Saturday?</div>
       <div class="full-sug" onclick="askFull(this)">Any divergence between 8w and 4w trends?</div>
     </div>
@@ -263,6 +265,11 @@ function badge(tf){
   if(tf<0.95) return '<span class="badge bdn">-'+((1-tf)*100).toFixed(0)+'%</span>';
   return '<span class="badge bfl">flat</span>';
 }
+function wasteClass(pct){
+  if(pct<10) return 'wlo';
+  if(pct<20) return 'wmd';
+  return 'whi';
+}
 function avgForSku(sku,rM){
   if(!rM[sku]) return 0;
   var vals=Object.values(rM[sku]);
@@ -303,13 +310,24 @@ async function load(){
   var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var lorders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
   var lsales=await get('/jb_sales?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
-  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold,trend_factor,trend_factor4,avg_waste_edify&limit=1000');
+  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold,avg_sold_4w,trend_factor,trend_factor4,dampened_trend,waste_rate_pct&limit=1000');
   var oM={},sM={},loM={},lsM={},rM={};
   orders.forEach(function(r){if(!oM[r.sku])oM[r.sku]={};oM[r.sku][r.date]=+r.qty;});
   sales.forEach(function(r){if(!sM[r.sku])sM[r.sku]={};sM[r.sku][r.date]=+r.qty;});
   lorders.forEach(function(r){if(!loM[r.sku])loM[r.sku]={};loM[r.sku][r.date]=+r.qty;});
   lsales.forEach(function(r){if(!lsM[r.sku])lsM[r.sku]={};lsM[r.sku][r.date]=+r.qty;});
-  recs.forEach(function(r){if(!rM[r.sku])rM[r.sku]={};rM[r.sku][r.dow]={rec:+r.rec_edify,avg:+r.avg_sold,tf:+r.trend_factor,tf4:+r.trend_factor4,waste:+r.avg_waste_edify};});
+  recs.forEach(function(r){
+    if(!rM[r.sku])rM[r.sku]={};
+    rM[r.sku][r.dow]={
+      rec:+r.rec_edify,
+      avg:+r.avg_sold,
+      avg4:+r.avg_sold_4w,
+      tf:+r.trend_factor,
+      tf4:+r.trend_factor4,
+      dtf:+r.dampened_trend,
+      wpct:+r.waste_rate_pct
+    };
+  });
   var allSkus=Object.keys(Object.assign({},oM,rM,loM));
   function sortByAvg(skus){return skus.sort(function(a,b){return avgForSku(b,rM)-avgForSku(a,rM);});}
   var dSkus=sortByAvg(allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}));
@@ -327,7 +345,7 @@ async function load(){
       if(past){
         sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>8w Trend</th><th>4w Trend</th><th>&Delta; Rec</th>';
       } else {
-        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Avg Sold</th><th>8w Trend</th><th>4w Trend</th><th>Avg Waste</th><th>Mgr Order</th><th style="color:#C9A84C">AI Adj</th>';
+        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Avg Sold</th><th>8w Trend</th><th>4w Trend</th><th>Waste %</th><th>Mgr Order</th><th style="color:#C9A84C">AI Adj</th>';
       }
     });
     var rows=skus.map(function(sku){
@@ -336,8 +354,8 @@ async function load(){
         var date=addDays(mon,i);
         var ldate=addDays(lmon,i);
         var past=date<today;
-        var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,tf:1,tf4:1,waste:0};
-        var wc=info.waste>2?'whi':'wok';
+        var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,avg4:0,tf:1,tf4:1,dtf:1,wpct:0};
+        var wc=wasteClass(info.wpct);
         var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
         var lws=(lsM[sku]&&lsM[sku][ldate]!==undefined)?lsM[sku][ldate]:'-';
         if(past){
@@ -351,8 +369,8 @@ async function load(){
           cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td class="'+lwwc+'">'+lww+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+badge(info.tf)+'</td><td>'+badge(info.tf4)+'</td><td'+dc+'>'+ds+'</td>';
         } else {
           var avgSold=info.avg?info.avg.toFixed(1):'-';
-          var avgWaste=info.waste?info.waste.toFixed(1):'0';
-          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+avgSold+'</td><td>'+badge(info.tf)+'</td><td>'+badge(info.tf4)+'</td><td class="'+wc+'">'+avgWaste+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td><td class="ai-adj">—</td>';
+          var wpctStr=info.wpct?info.wpct.toFixed(0)+'%':'0%';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+avgSold+'</td><td>'+badge(info.tf)+'</td><td>'+badge(info.tf4)+'</td><td class="'+wc+'">'+wpctStr+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td><td class="ai-adj">—</td>';
         }
       });
       return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
@@ -383,7 +401,6 @@ async function callAI(text,history,sendBtn){
   }catch(e){return 'Error: '+e.message;}
   finally{sendBtn.disabled=false;}
 }
-
 function addMsg(containerId,role,text){
   var div=document.createElement('div');
   div.className='msg '+role;
@@ -393,7 +410,6 @@ function addMsg(containerId,role,text){
   c.scrollTop=9999;
   return div;
 }
-
 function askPopup(el){document.getElementById('popup-input').value=el.textContent;sendPopup();}
 async function sendPopup(){
   var inp=document.getElementById('popup-input');
@@ -406,7 +422,6 @@ async function sendPopup(){
   thinking.remove();
   addMsg('popup-messages','assistant',reply);
 }
-
 function askFull(el){document.getElementById('full-input').value=el.textContent;sendFull();}
 async function sendFull(){
   var inp=document.getElementById('full-input');
