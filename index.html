@@ -7,38 +7,65 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:13px}
-.topbar{background:#3D4A35;color:#EDE0CC;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
-.topbar h1{font-size:13px;font-weight:500;letter-spacing:0.04em}
-.wk{font-size:11px;opacity:0.7}
-.wrap{max-width:1100px;margin:0 auto;padding:20px 16px}
-.weekbar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
-.weekbar label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
-.weekbar select{font-size:13px;padding:6px 10px;border-radius:6px;border:0.5px solid #ccc;background:#fff;font-family:inherit;cursor:pointer}
-.section{margin-bottom:28px}
-.section-title{font-size:11px;font-weight:500;color:#EDE0CC;background:#3D4A35;padding:6px 12px;border-radius:6px 6px 0 0;text-transform:uppercase;letter-spacing:0.08em}
+.topbar{background:#3D4A35;color:#EDE0CC;padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+.topbar h1{font-size:13px;font-weight:500;letter-spacing:0.06em}
+.topbar .meta{font-size:11px;opacity:0.7}
+.wrap{max-width:1400px;margin:0 auto;padding:20px 16px}
+.controls{display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.controls label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
+.controls select{font-size:13px;padding:6px 10px;border-radius:6px;border:0.5px solid #ccc;background:#fff;font-family:inherit;cursor:pointer}
+.legend{display:flex;gap:16px;margin-left:auto;align-items:center;font-size:11px;color:#888}
+.legend span{display:flex;align-items:center;gap:4px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.section{margin-bottom:32px}
+.section-title{font-size:11px;font-weight:600;color:#EDE0CC;background:#3D4A35;padding:7px 14px;border-radius:6px 6px 0 0;text-transform:uppercase;letter-spacing:0.1em;display:flex;justify-content:space-between;align-items:center}
+.section-title small{font-weight:400;opacity:0.7;font-size:10px;letter-spacing:0.05em}
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;background:#fff;border:0.5px solid #e0ddd5;font-size:12px}
-th{font-size:10px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.04em;padding:6px 10px;text-align:center;border-bottom:0.5px solid #e8e5dd;background:#faf9f6;white-space:nowrap}
-th.sku{text-align:left;min-width:130px}
-th.day{background:#f0ede5;color:#3D4A35;font-weight:600}
-td{padding:6px 10px;border-bottom:0.5px solid #f0ede5;text-align:center}
-td.sku{text-align:left;font-weight:500}
+thead tr:first-child th{font-size:10px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.06em;padding:7px 10px;text-align:center;background:#f0ede5;border-bottom:0.5px solid #ddd9d0;white-space:nowrap}
+thead tr:first-child th.sku-h{text-align:left;background:#f5f3ef}
+thead tr:last-child th{font-size:9px;font-weight:500;color:#aaa;text-transform:uppercase;letter-spacing:0.04em;padding:4px 10px;text-align:center;background:#faf9f6;border-bottom:1px solid #e0ddd5;white-space:nowrap}
+thead tr:last-child th.sku-h{text-align:left}
+td{padding:7px 10px;border-bottom:0.5px solid #f0ede5;text-align:center;vertical-align:middle}
+td.sku{text-align:left;font-weight:500;white-space:nowrap;min-width:140px}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#faf9f6}
 .pos{color:#3a6910;font-weight:600}
 .neg{color:#a02c2c;font-weight:600}
-.ld{text-align:center;padding:2rem;color:#888}
+.neutral{color:#888}
+.trend-up{color:#3a6910}
+.trend-dn{color:#a02c2c}
+.trend-fl{color:#888}
+.badge{display:inline-block;font-size:9px;padding:2px 5px;border-radius:3px;font-weight:600;letter-spacing:0.03em}
+.badge-up{background:#e8f3dc;color:#3a6910}
+.badge-dn{background:#fce8e8;color:#a02c2c}
+.badge-fl{background:#f0ede5;color:#888}
+.stepper{display:flex;align-items:center;gap:0;border:0.5px solid #c8c4bc;border-radius:5px;overflow:hidden;width:90px}
+.stepper button{background:#f5f3ef;border:none;width:24px;height:28px;font-size:14px;cursor:pointer;color:#3D4A35;font-weight:600;flex-shrink:0}
+.stepper button:hover{background:#e8e4dc}
+.stepper input{border:none;width:42px;height:28px;text-align:center;font-size:13px;font-weight:600;color:#1a1a1a;font-family:inherit;background:#fff;-moz-appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none}
+.rec-num{font-size:14px;font-weight:600;color:#3D4A35}
+.waste-hi{color:#a02c2c}
+.waste-ok{color:#888}
+.ld{text-align:center;padding:3rem;color:#888}
+.divider{border:none;border-top:2px solid #3D4A35;margin:0 0 0 0;opacity:0.15}
 </style>
 </head>
 <body>
 <div class="topbar">
   <h1>JOE BLAKE'S &middot; WEST ONE &middot; ORDER INTELLIGENCE</h1>
-  <span class="wk" id="wk"></span>
+  <div class="meta" id="meta"></div>
 </div>
 <div class="wrap">
-  <div class="weekbar">
+  <div class="controls">
     <label>Week</label>
     <select id="week-pick" onchange="load()"></select>
+    <div class="legend">
+      <span><span class="dot" style="background:#3a6910"></span> Over-ordered vs rec</span>
+      <span><span class="dot" style="background:#a02c2c"></span> Under-ordered vs rec</span>
+      <span><span class="dot" style="background:#f0a500"></span> High waste</span>
+    </div>
   </div>
   <div id="content" class="ld">Loading...</div>
 </div>
@@ -49,15 +76,16 @@ var H={apikey:KEY,Authorization:'Bearer '+KEY};
 var DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Glazed','Custard','Vegan Lotus','Pink Sprinkle','Chocolate Glazed','Chocolate Sprinkle','Double Chocolate','Tiramisu','Cinnamon Sugar','Honeycomb','Lemon','Jaffa Cake','Cinnamon Bun'];
 var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata'];
+var managerOrders={};
 
 async function get(path){
   try{var r=await fetch(BASE+path,{headers:H});return await r.json();}
   catch(e){return [];}
 }
-
 function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
-function addDays(d,n){var dt=new Date(d);dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
+function addDays(d,n){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
 function fmtShort(d){return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+function fmtDay(d){return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}
 
 function init(){
   var today=new Date().toISOString().split('T')[0];
@@ -83,63 +111,103 @@ function init(){
 async function load(){
   var monday=document.getElementById('week-pick').value;
   if(!monday)return;
+  managerOrders={};
   document.getElementById('content').innerHTML='<div class="ld">Loading...</div>';
   var today=new Date().toISOString().split('T')[0];
   var sunday=addDays(monday,6);
-  document.getElementById('wk').textContent='w/c '+fmtShort(monday)+' \u2013 '+fmtShort(sunday);
+  var lastMonday=addDays(monday,-7);
+  var lastSunday=addDays(sunday,-7);
+  document.getElementById('meta').textContent='w/c '+fmtShort(monday)+' \u2013 '+fmtShort(sunday);
 
   var orders=await get('/jb_orders?select=sku,qty,date&date=gte.'+monday+'&date=lte.'+sunday+'&limit=1000');
   var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+monday+'&date=lte.'+sunday+'&limit=1000');
-  var recs=await get('/jb_forecast?select=sku,dow,rec_edify&limit=1000');
+  var lastOrders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lastMonday+'&date=lte.'+lastSunday+'&limit=1000');
+  var lastSales=await get('/jb_sales?select=sku,qty,date&date=gte.'+lastMonday+'&date=lte.'+lastSunday+'&limit=1000');
+  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold,trended_avg,trend_factor,avg_waste_edify&limit=1000');
 
-  var oMap={},sMap={},rMap={};
+  var oMap={},sMap={},loMap={},lsMap={},rMap={};
   orders.forEach(function(r){if(!oMap[r.sku])oMap[r.sku]={};oMap[r.sku][r.date]=parseInt(r.qty);});
   sales.forEach(function(r){if(!sMap[r.sku])sMap[r.sku]={};sMap[r.sku][r.date]=parseInt(r.qty);});
-  recs.forEach(function(r){if(!rMap[r.sku])rMap[r.sku]={};rMap[r.sku][r.dow]=parseInt(r.rec_edify);});
+  lastOrders.forEach(function(r){if(!loMap[r.sku])loMap[r.sku]={};loMap[r.sku][r.date]=parseInt(r.qty);});
+  lastSales.forEach(function(r){if(!lsMap[r.sku])lsMap[r.sku]={};lsMap[r.sku][r.date]=parseInt(r.qty);});
+  recs.forEach(function(r){
+    if(!rMap[r.sku])rMap[r.sku]={};
+    rMap[r.sku][r.dow]={rec:parseInt(r.rec_edify),avg:parseFloat(r.avg_sold),trend:parseFloat(r.trend_factor),waste:parseFloat(r.avg_waste_edify),trended:parseFloat(r.trended_avg)};
+  });
 
-  var allSkus=Object.keys(Object.assign({},oMap,rMap));
+  var allSkus=Object.keys(Object.assign({},oMap,rMap,loMap));
   var dSkus=allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}).sort();
   var pSkus=allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}).sort();
 
-  if(!allSkus.length){
-    document.getElementById('content').innerHTML='<div class="ld">No data for this week</div>';
-    return;
-  }
+  if(!allSkus.length){document.getElementById('content').innerHTML='<div class="ld">No data for this week</div>';return;}
 
-  function buildSection(title,skus){
+  function buildSection(title,subtitle,skus){
     if(!skus.length)return '';
+
     var dayHeaders=DAYS.map(function(day,i){
       var date=addDays(monday,i);
       var isPast=date<today;
-      return '<th class="day" colspan="'+(isPast?4:1)+'">'+day.slice(0,3)+' '+fmtShort(date)+'</th>';
+      var cols=isPast?7:4;
+      return '<th class="sku-h" colspan="'+cols+'" style="border-left:1px solid #ddd9d0">'+day.slice(0,3)+' '+fmtShort(date)+(isPast?' <span style="opacity:0.5;font-size:9px">ACTUAL</span>':' <span style="opacity:0.5;font-size:9px">FORECAST</span>')+'</th>';
     }).join('');
-    var subHeaders=DAYS.map(function(day,i){
+
+    var subHeaders='<th class="sku-h">SKU</th>'+DAYS.map(function(day,i){
       var date=addDays(monday,i);
       var isPast=date<today;
-      return isPast?'<th>Ord</th><th>Sold</th><th>Rec</th><th>&#916;</th>':'<th>Rec</th>';
+      if(isPast){
+        return '<th style="border-left:1px solid #eee">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>Trend</th><th>&#916; vs Rec</th>';
+      } else {
+        return '<th style="border-left:1px solid #eee">Avg Sold</th><th>Trend</th><th>Avg Waste</th><th>Rec</th>';
+      }
     }).join('');
+
     var rows=skus.map(function(sku){
       var cells=DAYS.map(function(day,i){
         var date=addDays(monday,i);
+        var lastDate=addDays(lastMonday,i);
         var isPast=date<today;
-        var ord=(oMap[sku]&&oMap[sku][date]!==undefined)?oMap[sku][date]:'-';
-        var sol=(sMap[sku]&&sMap[sku][date]!==undefined)?sMap[sku][date]:'-';
-        var rec=(rMap[sku]&&rMap[sku][day]!==undefined)?rMap[sku][day]:'-';
+        var info=(rMap[sku]&&rMap[sku][day])||{rec:'-',avg:0,trend:1,waste:0,trended:0};
+        var rec=info.rec;
+        var tf=info.trend;
+        var avgSold=info.avg?info.avg.toFixed(1):'-';
+        var avgWaste=info.waste!==undefined?info.waste.toFixed(1):'-';
+        var trendBadge=tf>1.05?'<span class="badge badge-up">+'+((tf-1)*100).toFixed(0)+'%</span>':tf<0.95?'<span class="badge badge-dn">-'+((1-tf)*100).toFixed(0)+'%</span>':'<span class="badge badge-fl">flat</span>';
+        var wasteClass=info.waste>2?'waste-hi':'waste-ok';
+
         if(isPast){
-          var delta=(rec!=='-'&&ord!=='-')?(parseInt(ord)-parseInt(rec)):null;
-          var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
+          var lwOrd=(loMap[sku]&&loMap[sku][lastDate]!==undefined)?loMap[sku][lastDate]:'-';
+          var lwSol=(lsMap[sku]&&lsMap[sku][lastDate]!==undefined)?lsMap[sku][lastDate]:'-';
+          var lwWaste=(lwOrd!=='-'&&lwSol!=='-')?(lwOrd-lwSol):'-';
+          var ord=(oMap[sku]&&oMap[sku][date]!==undefined)?oMap[sku][date]:'-';
+          var sol=(sMap[sku]&&sMap[sku][date]!==undefined)?sMap[sku][date]:'-';
+          var delta=(rec!=='-'&&ord!=='-')?(ord-rec):null;
+          var dc=delta===null?'neutral':delta>0?'pos':delta<0?'neg':'neutral';
           var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
-          return '<td>'+ord+'</td><td>'+sol+'</td><td>'+rec+'</td><td'+dc+'>'+ds+'</td>';
-        }else{
-          return '<td><strong>'+(rec!=='-'?rec:'-')+'</strong></td>';
+          var lwWasteClass=lwWaste!=='-'&&lwWaste>2?'waste-hi':'waste-ok';
+          return '<td style="border-left:1px solid #eee">'+lwOrd+'</td><td>'+lwSol+'</td><td class="'+lwWasteClass+'">'+lwWaste+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+trendBadge+'</td><td class="'+dc+'">'+ds+'</td>';
+        } else {
+          var key=sku+'|'+day;
+          if(managerOrders[key]===undefined) managerOrders[key]=rec;
+          return '<td style="border-left:1px solid #eee">'+avgSold+'</td><td>'+trendBadge+'</td><td class="'+wasteClass+'">'+avgWaste+'</td><td><div class="stepper"><button onclick="adj(\''+key+'\',-1)">&#8722;</button><input type="number" id="inp_'+key.replace(/[^a-z0-9]/gi,\'_\')+'" value="'+(managerOrders[key]!=='-'?managerOrders[key]:0)+'" onchange="managerOrders[\''+key+'\']=parseInt(this.value)||0"/><button onclick="adj(\''+key+'\',1)">+</button></div></td>';
         }
       }).join('');
       return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
     }).join('');
-    return '<div class="section"><div class="section-title">'+title+'</div><div class="tbl-wrap"><table><thead><tr><th class="sku">SKU</th>'+dayHeaders+'</tr><tr><th></th>'+subHeaders+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+
+    return '<div class="section"><div class="section-title">'+title+' <small>'+subtitle+'</small></div><div class="tbl-wrap"><table><thead><tr><th class="sku-h" rowspan="2" style="vertical-align:middle;min-width:140px">SKU</th>'+dayHeaders+'</tr><tr>'+subHeaders.replace('<th class="sku-h">SKU</th>','')+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   }
 
-  document.getElementById('content').innerHTML=buildSection('DOUGHNUTS \u2014 RED ROSE',dSkus)+buildSection('PASTRIES \u2014 GALETA',pSkus);
+  document.getElementById('content').innerHTML=
+    buildSection('DOUGHNUTS \u2014 RED ROSE','Supplier: Red Rose Bakery',dSkus)+
+    buildSection('PASTRIES \u2014 GALETA','Supplier: Galeta',pSkus);
+}
+
+function adj(key,delta){
+  if(managerOrders[key]===undefined||managerOrders[key]==='-') managerOrders[key]=0;
+  managerOrders[key]=Math.max(0,managerOrders[key]+delta);
+  var id='inp_'+key.replace(/[^a-z0-9]/gi,'_');
+  var el=document.getElementById(id);
+  if(el) el.value=managerOrders[key];
 }
 
 init();
