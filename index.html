@@ -46,7 +46,7 @@ tr:last-child td{border-bottom:none}
 <body>
 <div class="topbar">
   <h1>JOE BLAKE'S &middot; WEST ONE &middot; DATA UPLOAD</h1>
-  <a href="/">← Back to Dashboard</a>
+  <a href="/index.html">&#8592; Back to Dashboard</a>
 </div>
 <div class="wrap">
   <div class="card">
@@ -229,4 +229,16 @@ async function uploadData(type){
       document.getElementById(type+'-progress').textContent=done+' / '+payload.length+' rows uploaded...';
     }catch(e){setStatus(type,'error','Network error: '+e.message);btn.disabled=false;return;}
   }
-  setStatus(type,'success','Done! '+payload.leng
+  setStatus(type,'success','Done! '+payload.length+' rows uploaded. Dashboard will reflect updated data immediately.');
+  document.getElementById(type+'-progress').textContent='';
+  btn.disabled=false;
+}
+function setStatus(type,cls,msg){
+  var el=document.getElementById(type+'-status');
+  el.className='status '+cls;el.textContent=msg;
+}
+setupDrop('sales');
+setupDrop('orders');
+</script>
+</body>
+</html>
