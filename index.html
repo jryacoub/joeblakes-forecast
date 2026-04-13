@@ -6,26 +6,31 @@
 <title>Joe Blake's West One</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:14px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:13px}
 .topbar{background:#3D4A35;color:#EDE0CC;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
 .topbar h1{font-size:13px;font-weight:500;letter-spacing:0.04em}
 .wk{font-size:11px;opacity:0.7}
-.wrap{max-width:820px;margin:0 auto;padding:20px 16px}
-.datebar{display:flex;align-items:center;gap:10px;margin-bottom:20px}
-.datebar label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
-.datebar select{font-size:13px;padding:6px 10px;border-radius:6px;border:0.5px solid #ccc;background:#fff;font-family:inherit;cursor:pointer}
-.section{margin-bottom:24px}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px}
+.weekbar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.weekbar label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
+.weekbar select{font-size:13px;padding:6px 10px;border-radius:6px;border:0.5px solid #ccc;background:#fff;font-family:inherit;cursor:pointer}
+.mode{font-size:11px;color:#888;margin-left:16px}
+.section{margin-bottom:28px}
 .section-title{font-size:11px;font-weight:500;color:#EDE0CC;background:#3D4A35;padding:6px 12px;border-radius:6px 6px 0 0;text-transform:uppercase;letter-spacing:0.08em}
-table{width:100%;border-collapse:collapse;background:#fff;border-radius:0 0 8px 8px;overflow:hidden;border:0.5px solid #e0ddd5}
-th{font-size:10px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;padding:7px 12px;text-align:right;border-bottom:0.5px solid #e8e5dd;background:#faf9f6}
-th:first-child{text-align:left}
-td{padding:7px 12px;border-bottom:0.5px solid #f0ede5;text-align:right}
-td:first-child{text-align:left;font-weight:500}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:#fff;border:0.5px solid #e0ddd5;font-size:12px}
+th{font-size:10px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.04em;padding:6px 10px;text-align:center;border-bottom:0.5px solid #e8e5dd;background:#faf9f6;white-space:nowrap}
+th.sku{text-align:left;min-width:130px}
+th.day{background:#f0ede5;color:#3D4A35;font-weight:500}
+td{padding:6px 10px;border-bottom:0.5px solid #f0ede5;text-align:center}
+td.sku{text-align:left;font-weight:500}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#faf9f6}
 .pos{color:#3a6910;font-weight:600}
 .neg{color:#a02c2c;font-weight:600}
+.sub{font-size:9px;color:#aaa;display:block}
 .ld{text-align:center;padding:2rem;color:#888}
+.day-group{border-left:1px solid #e8e5dd}
 </style>
 </head>
 <body>
@@ -34,9 +39,10 @@ tr:hover td{background:#faf9f6}
   <span class="wk" id="wk"></span>
 </div>
 <div class="wrap">
-  <div class="datebar">
-    <label>Date</label>
-    <select id="date-pick" onchange="load()"></select>
+  <div class="weekbar">
+    <label>Week</label>
+    <select id="week-pick" onchange="load()"></select>
+    <span class="mode" id="mode"></span>
   </div>
   <div id="content" class="ld">Loading...</div>
 </div>
@@ -44,55 +50,114 @@ tr:hover td{background:#faf9f6}
 var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnaW56eG9iaW5ycWRkYmJ1ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NDk1NzEsImV4cCI6MjA4NzQyNTU3MX0.GXsPlQN0oG7BcJHm-_-1vTHoIf84IF5lghYoOg-_7CQ';
 var BASE='https://uginzxobinrqddbbuenu.supabase.co/rest/v1';
 var H={apikey:KEY,Authorization:'Bearer '+KEY};
+var DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Glazed','Custard','Vegan Lotus','Pink Sprinkle','Chocolate Glazed','Chocolate Sprinkle','Double Chocolate','Tiramisu','Cinnamon Sugar','Honeycomb','Lemon','Jaffa Cake','Cinnamon Bun'];
 var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata'];
 
 async function get(path){var r=await fetch(BASE+path,{headers:H});return r.json();}
 
+function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
+function addDays(d,n){var dt=new Date(d);dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
+function fmtShort(d){return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+function fmtLong(d){return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}
+
 async function init(){
-  var rows=await get('/jb_orders?select=date&order=date.desc&limit=200');
-  var dates=[...new Set(rows.map(function(r){return r.date;}))].slice(0,28);
-  var sel=document.getElementById('date-pick');
-  dates.forEach(function(d){
+  var today=new Date().toISOString().split('T')[0];
+  var thisMonday=getMonday(today);
+  var weeks=[];
+  // 2 weeks forward
+  for(var i=2;i>=0;i--) weeks.push(addDays(thisMonday,i*-7));
+  // future weeks
+  weeks.unshift(addDays(thisMonday,7));
+  weeks.unshift(addDays(thisMonday,14));
+  // past weeks going back to start of data
+  for(var j=1;j<=12;j++) weeks.push(addDays(thisMonday,j*-7));
+
+  var sel=document.getElementById('week-pick');
+  weeks.forEach(function(w,i){
     var opt=document.createElement('option');
-    opt.value=d;
-    opt.textContent=new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    opt.value=w;
+    var end=addDays(w,6);
+    var label=fmtShort(w)+' – '+fmtShort(end);
+    if(w===thisMonday) label='This week: '+label;
+    else if(w===addDays(thisMonday,-7)) label='Last week: '+label;
+    else if(w===addDays(thisMonday,7)) label='Next week: '+label;
+    opt.textContent=label;
+    if(w===thisMonday) opt.selected=true;
     sel.appendChild(opt);
   });
   load();
 }
 
 async function load(){
-  var date=document.getElementById('date-pick').value;
-  if(!date)return;
+  var monday=document.getElementById('week-pick').value;
+  if(!monday)return;
   document.getElementById('content').innerHTML='<div class="ld">Loading...</div>';
-  var dow=new Date(date).toLocaleDateString('en-US',{weekday:'long'});
-  var orders=await get('/jb_orders?select=sku,qty&date=eq.'+date);
-  var sales=await get('/jb_sales?select=sku,qty&date=eq.'+date);
-  var recs=await get('/jb_forecast?select=sku,rec_edify&dow=eq.'+dow);
+  var sunday=addDays(monday,6);
+  var today=new Date().toISOString().split('T')[0];
+  var isFuture=monday>today;
+  var isThisWeek=monday===getMonday(today);
+
+  document.getElementById('wk').textContent=fmtShort(monday)+' – '+fmtLong(sunday);
+  document.getElementById('mode').textContent=isFuture?'Forecast only':isThisWeek?'This week — forecast':' Past week — actuals vs model';
+
+  // Get dates for this week
+  var weekDates=DAYS.map(function(_,i){return addDays(monday,i);});
+
+  // Fetch orders, sales, recs
+  var orders=await get('/jb_orders?select=sku,qty,date&date=gte.'+monday+'&date=lte.'+sunday);
+  var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+monday+'&date=lte.'+sunday);
+  var recs=await get('/jb_forecast?select=sku,dow,rec_edify');
+
+  // Build maps
   var oMap={},sMap={},rMap={};
-  orders.forEach(function(r){oMap[r.sku]=parseInt(r.qty);});
-  sales.forEach(function(r){sMap[r.sku]=parseInt(r.qty);});
-  recs.forEach(function(r){rMap[r.sku]=parseInt(r.rec_edify);});
-  var allSkus=Object.keys(oMap);
+  orders.forEach(function(r){if(!oMap[r.sku])oMap[r.sku]={};oMap[r.sku][r.date]=parseInt(r.qty);});
+  sales.forEach(function(r){if(!sMap[r.sku])sMap[r.sku]={};sMap[r.sku][r.date]=parseInt(r.qty);});
+  recs.forEach(function(r){if(!rMap[r.sku])rMap[r.sku]={};rMap[r.sku][r.dow]=parseInt(r.rec_edify);});
+
+  // All SKUs that have orders this week OR have recs
+  var allSkus=Object.keys(Object.assign({},oMap,rMap));
   var dSkus=allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}).sort();
   var pSkus=allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}).sort();
-  document.getElementById('wk').textContent=new Date(date).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  document.getElementById('content').innerHTML=buildSection('DOUGHNUTS — RED ROSE',dSkus,oMap,sMap,rMap)+buildSection('PASTRIES — GALETA',pSkus,oMap,sMap,rMap);
-}
 
-function buildSection(title,skus,oMap,sMap,rMap){
-  if(!skus.length)return '';
-  var rows=skus.map(function(sku){
-    var ord=oMap[sku]||0;
-    var sol=sMap[sku]!==undefined?sMap[sku]:'-';
-    var rec=rMap[sku]!==undefined?rMap[sku]:'-';
-    var delta=(rec!=='-'&&ord)?(ord-rec):null;
-    var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
-    var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
-    return '<tr><td>'+sku+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+rec+'</td><td'+dc+'>'+ds+'</td></tr>';
-  }).join('');
-  return '<div class="section"><div class="section-title">'+title+'</div><table><thead><tr><th>SKU</th><th>Ordered</th><th>Sold</th><th>Model rec</th><th>Delta</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  function buildSection(title,skus){
+    if(!skus.length)return '';
+    // Header row
+    var dayHeaders=DAYS.map(function(day,i){
+      var date=weekDates[i];
+      var isPast=date<today;
+      var cols=isPast?'<th>Ord</th><th>Sold</th><th>Rec</th><th>Delta</th>':'<th>Rec</th>';
+      return '<th class="day sku" colspan="'+(isPast?4:1)+'">'+day.slice(0,3)+' '+fmtShort(date)+'</th>';
+    }).join('');
+    var subHeaders=DAYS.map(function(day,i){
+      var date=weekDates[i];
+      var isPast=date<today;
+      return isPast?'<th>Ord</th><th>Sold</th><th>Rec</th><th>&#916;</th>':'<th>Rec</th>';
+    }).join('');
+
+    var rows=skus.map(function(sku){
+      var cells=DAYS.map(function(day,i){
+        var date=weekDates[i];
+        var isPast=date<today;
+        var ord=(oMap[sku]&&oMap[sku][date]!==undefined)?oMap[sku][date]:'-';
+        var sol=(sMap[sku]&&sMap[sku][date]!==undefined)?sMap[sku][date]:'-';
+        var rec=(rMap[sku]&&rMap[sku][day]!==undefined)?rMap[sku][day]:'-';
+        if(isPast){
+          var delta=(rec!=='-'&&ord!=='-')?(parseInt(ord)-parseInt(rec)):null;
+          var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
+          var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
+          return '<td>'+ord+'</td><td>'+sol+'</td><td>'+rec+'</td><td'+dc+'>'+ds+'</td>';
+        } else {
+          return '<td><strong>'+(rec!=='-'?rec:'-')+'</strong></td>';
+        }
+      }).join('');
+      return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
+    }).join('');
+
+    return '<div class="section"><div class="section-title">'+title+'</div><div class="tbl-wrap"><table><thead><tr><th class="sku">SKU</th>'+dayHeaders+'</tr><tr><th></th>'+subHeaders+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }
+
+  document.getElementById('content').innerHTML=buildSection('DOUGHNUTS — RED ROSE',dSkus)+buildSection('PASTRIES — GALETA',pSkus);
 }
 
 init();
