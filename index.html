@@ -84,7 +84,6 @@ input[type=file]{display:none}
   <div class="tab" id="tab-import" onclick="showTab('import')">Import Data</div>
 </div>
 
-<!-- DASHBOARD TAB -->
 <div id="pane-dashboard">
 <div class="wrap">
   <div class="controls">
@@ -100,7 +99,6 @@ input[type=file]{display:none}
 </div>
 </div>
 
-<!-- IMPORT TAB -->
 <div id="pane-import" style="display:none">
 <div class="wrap">
   <div class="card">
@@ -126,7 +124,6 @@ input[type=file]{display:none}
       <span class="uprogress" id="sales-progress"></span>
     </div>
   </div>
-
   <div class="card">
     <h2>Edify Orders Export</h2>
     <div class="sub">Upload an Edify PO CSV to update orders data. Existing rows for the same dates will be overwritten.</div>
@@ -172,7 +169,6 @@ function showTab(t){
   document.getElementById('tab-import').className='tab'+(t==='import'?' active':'');
 }
 
-// DASHBOARD
 async function get(p){try{var r=await fetch(BASE+p,{headers:H});return await r.json();}catch(e){return[];}}
 function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
 function addDays(d,n){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
@@ -187,6 +183,7 @@ function avgForSku(sku,rM){
   var vals=Object.values(rM[sku]);
   return vals.reduce(function(s,v){return s+v.avg;},0)/vals.length;
 }
+
 function init(){
   var today=new Date().toISOString().split('T')[0];
   var mon=getMonday(today);
@@ -206,6 +203,7 @@ function init(){
   });
   load();
 }
+
 async function load(){
   var mon=document.getElementById('week-pick').value;
   if(!mon) return;
@@ -219,28 +217,29 @@ async function load(){
   var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var lorders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
   var lsales=await get('/jb_sales?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
-  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold,trend_factor,avg_waste_edify&limit=1000');
+  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold,trend_factor,trend_factor4,avg_waste_edify&limit=1000');
   var oM={},sM={},loM={},lsM={},rM={};
   orders.forEach(function(r){if(!oM[r.sku])oM[r.sku]={};oM[r.sku][r.date]=+r.qty;});
   sales.forEach(function(r){if(!sM[r.sku])sM[r.sku]={};sM[r.sku][r.date]=+r.qty;});
   lorders.forEach(function(r){if(!loM[r.sku])loM[r.sku]={};loM[r.sku][r.date]=+r.qty;});
   lsales.forEach(function(r){if(!lsM[r.sku])lsM[r.sku]={};lsM[r.sku][r.date]=+r.qty;});
-  recs.forEach(function(r){if(!rM[r.sku])rM[r.sku]={};rM[r.sku][r.dow]={rec:+r.rec_edify,avg:+r.avg_sold,tf:+r.trend_factor,waste:+r.avg_waste_edify};});
+  recs.forEach(function(r){if(!rM[r.sku])rM[r.sku]={};rM[r.sku][r.dow]={rec:+r.rec_edify,avg:+r.avg_sold,tf:+r.trend_factor,tf4:+r.trend_factor4,waste:+r.avg_waste_edify};});
   var allSkus=Object.keys(Object.assign({},oM,rM,loM));
   function sortByAvg(skus){return skus.sort(function(a,b){return avgForSku(b,rM)-avgForSku(a,rM);});}
   var dSkus=sortByAvg(allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}));
   var pSkus=sortByAvg(allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}));
   if(!allSkus.length){document.getElementById('content').innerHTML='<div class="ld">No data</div>';return;}
+
   function buildSection(title,sub,skus){
     if(!skus.length) return '';
     var dh='';var sh='';
     DAYS.forEach(function(day,i){
       var date=addDays(mon,i);
       var past=date<today;
-      var cols=past?7:6;
+      var cols=past?8:7;
       dh+='<th colspan="'+cols+'" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
-      if(past) sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>Trend</th><th>&Delta; Rec</th>';
-      else sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Avg Sold</th><th>Trend</th><th>Avg Waste</th><th>Mgr Order</th>';
+      if(past) sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>8w Trend</th><th>4w Trend</th><th>&Delta; Rec</th>';
+      else sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Avg Sold</th><th>8w Trend</th><th>4w Trend</th><th>Avg Waste</th><th>Mgr Order</th>';
     });
     var rows=skus.map(function(sku){
       var cells='';
@@ -248,8 +247,7 @@ async function load(){
         var date=addDays(mon,i);
         var ldate=addDays(lmon,i);
         var past=date<today;
-        var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,tf:1,waste:0};
-        var tf=info.tf;
+        var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,tf:1,tf4:1,waste:0};
         var wc=info.waste>2?'whi':'wok';
         var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
         var lws=(lsM[sku]&&lsM[sku][ldate]!==undefined)?lsM[sku][ldate]:'-';
@@ -261,17 +259,18 @@ async function load(){
           var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
           var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
           var lwwc=(lww!=='-'&&lww>2)?'whi':'wok';
-          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td class="'+lwwc+'">'+lww+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+badge(tf)+'</td><td'+dc+'>'+ds+'</td>';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td class="'+lwwc+'">'+lww+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+badge(info.tf)+'</td><td>'+badge(info.tf4)+'</td><td'+dc+'>'+ds+'</td>';
         } else {
           var avgSold=info.avg?info.avg.toFixed(1):'-';
           var avgWaste=info.waste?info.waste.toFixed(1):'0';
-          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+avgSold+'</td><td>'+badge(tf)+'</td><td class="'+wc+'">'+avgWaste+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td>';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+avgSold+'</td><td>'+badge(info.tf)+'</td><td>'+badge(info.tf4)+'</td><td class="'+wc+'">'+avgWaste+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td>';
         }
       });
       return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
     }).join('');
     return '<div class="section"><div class="section-title">'+title+' <small>'+sub+'</small></div><div class="tbl-wrap"><table><thead><tr><th class="skuh" rowspan="2" style="min-width:140px;vertical-align:middle">SKU</th>'+dh+'</tr><tr>'+sh+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   }
+
   document.getElementById('content').innerHTML=
     buildSection('DOUGHNUTS \u2014 RED ROSE','Supplier: Red Rose Bakery',dSkus)+
     buildSection('PASTRIES \u2014 GALETA','Supplier: Galeta',pSkus);
