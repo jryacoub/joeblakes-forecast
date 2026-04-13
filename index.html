@@ -72,6 +72,24 @@ input[type=file]{display:none}
 .mrow>div{flex:1}
 .uactions{margin-top:16px;display:flex;gap:8px;align-items:center}
 .uprogress{font-size:11px;color:#888}
+/* Chat */
+.chat-wrap{max-width:800px;margin:0 auto;display:flex;flex-direction:column;height:calc(100vh - 120px)}
+.chat-context{background:#fff;border:0.5px solid #e0ddd5;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:11px;color:#888}
+.chat-context strong{color:#3D4A35}
+.chat-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-bottom:12px}
+.msg{max-width:85%;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.5}
+.msg.user{align-self:flex-end;background:#3D4A35;color:#EDE0CC;border-radius:8px 8px 2px 8px}
+.msg.assistant{align-self:flex-start;background:#fff;border:0.5px solid #e0ddd5;color:#1a1a1a;border-radius:8px 8px 8px 2px}
+.msg.thinking{opacity:0.5;font-style:italic}
+.chat-input-row{display:flex;gap:8px;padding-top:12px;border-top:0.5px solid #e0ddd5}
+.chat-input{flex:1;padding:10px 14px;border:0.5px solid #ccc;border-radius:6px;font-size:13px;font-family:inherit;resize:none;height:44px}
+.chat-input:focus{outline:none;border-color:#3D4A35}
+.chat-send{padding:0 20px;background:#3D4A35;color:#EDE0CC;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+.chat-send:hover{background:#4a5a40}
+.chat-send:disabled{background:#ccc;cursor:not-allowed}
+.suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.sug{padding:6px 12px;background:#fff;border:0.5px solid #c8c4bc;border-radius:20px;font-size:11px;color:#3D4A35;cursor:pointer}
+.sug:hover{background:#f0ede5}
 </style>
 </head>
 <body>
@@ -81,9 +99,11 @@ input[type=file]{display:none}
 </div>
 <div class="tabs">
   <div class="tab active" id="tab-dashboard" onclick="showTab('dashboard')">Dashboard</div>
+  <div class="tab" id="tab-chat" onclick="showTab('chat')">AI Assistant</div>
   <div class="tab" id="tab-import" onclick="showTab('import')">Import Data</div>
 </div>
 
+<!-- DASHBOARD -->
 <div id="pane-dashboard">
 <div class="wrap">
   <div class="controls">
@@ -99,6 +119,30 @@ input[type=file]{display:none}
 </div>
 </div>
 
+<!-- CHAT -->
+<div id="pane-chat" style="display:none">
+<div class="wrap">
+  <div class="chat-wrap">
+    <div class="chat-context">
+      <strong>Context:</strong> AI has access to live forecast data, 8w &amp; 4w trends, waste, recs, and this week's orders &amp; sales. Ask anything about the business.
+    </div>
+    <div class="suggestions">
+      <div class="sug" onclick="askSuggestion(this)">Which SKUs should I pull back on?</div>
+      <div class="sug" onclick="askSuggestion(this)">What's trending up this week?</div>
+      <div class="sug" onclick="askSuggestion(this)">Where is waste highest?</div>
+      <div class="sug" onclick="askSuggestion(this)">What should I order more of on Saturday?</div>
+      <div class="sug" onclick="askSuggestion(this)">Any divergence between 8w and 4w trends?</div>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chat-input" placeholder="Ask anything about your orders, sales, trends or waste..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+      <button class="chat-send" id="chat-send" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- IMPORT -->
 <div id="pane-import" style="display:none">
 <div class="wrap">
   <div class="card">
@@ -153,6 +197,7 @@ input[type=file]{display:none}
 <script>
 var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnaW56eG9iaW5ycWRkYmJ1ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NDk1NzEsImV4cCI6MjA4NzQyNTU3MX0.GXsPlQN0oG7BcJHm-_-1vTHoIf84IF5lghYoOg-_7CQ';
 var BASE='https://uginzxobinrqddbbuenu.supabase.co/rest/v1';
+var EDGE='https://uginzxobinrqddbbuenu.supabase.co/functions/v1/joeblakes-chat';
 var H={apikey:KEY,Authorization:'Bearer '+KEY};
 var UH={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};
 var DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -161,14 +206,17 @@ var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Gl
 var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata','Cinnamon Bun'];
 var SKU_MAP={'glazed chocolate':'Chocolate Sprinkle','chocolate glazed':'Chocolate Sprinkle','choc glazed':'Chocolate Sprinkle','choc sprinkle':'Chocolate Sprinkle','chocolate sprinkle doughnut':'Chocolate Sprinkle','nutella':'Nutella','pistachio':'Pistachio','kinder bueno':'Kinder Bueno','red velvet':'Red Velvet','vegan jam':'Vegan Jam','glazed':'Glazed','custard':'Custard','vegan lotus':'Vegan Lotus','pink sprinkle':'Pink Sprinkle','chocolate sprinkle':'Chocolate Sprinkle','tiramisu':'Tiramisu','cinnamon sugar':'Cinnamon Sugar','honeycomb':'Honeycomb','lemon':'Lemon','jaffa cake':'Jaffa Cake','almond croissant':'Almond Croissant','plain croissant':'Plain Croissant','plain nata':'Plain Nata','pain au chocolat':'Pain Au Chocolat','pain aux raisin':'Pain Aux Raisin','raspberry nata':'Raspberry Nata','cinnamon bun':'Cinnamon Bun'};
 var uploadState={sales:{rows:[],headers:[]},orders:{rows:[],headers:[]}};
+var chatHistory=[];
+var currentWeek={};
 
 function showTab(t){
-  document.getElementById('pane-dashboard').style.display=t==='dashboard'?'block':'none';
-  document.getElementById('pane-import').style.display=t==='import'?'block':'none';
-  document.getElementById('tab-dashboard').className='tab'+(t==='dashboard'?' active':'');
-  document.getElementById('tab-import').className='tab'+(t==='import'?' active':'');
+  ['dashboard','chat','import'].forEach(function(p){
+    document.getElementById('pane-'+p).style.display=p===t?'block':'none';
+    document.getElementById('tab-'+p).className='tab'+(p===t?' active':'');
+  });
 }
 
+// DASHBOARD
 async function get(p){try{var r=await fetch(BASE+p,{headers:H});return await r.json();}catch(e){return[];}}
 function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
 function addDays(d,n){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
@@ -212,6 +260,7 @@ async function load(){
   var sun=addDays(mon,6);
   var lmon=addDays(mon,-7);
   var lsun=addDays(sun,-7);
+  currentWeek={mon,sun,lmon,lsun};
   document.getElementById('meta').textContent='w/c '+fmt(mon)+' \u2013 '+fmt(sun);
   var orders=await get('/jb_orders?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
@@ -229,7 +278,6 @@ async function load(){
   var dSkus=sortByAvg(allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}));
   var pSkus=sortByAvg(allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}));
   if(!allSkus.length){document.getElementById('content').innerHTML='<div class="ld">No data</div>';return;}
-
   function buildSection(title,sub,skus){
     if(!skus.length) return '';
     var dh='';var sh='';
@@ -270,7 +318,6 @@ async function load(){
     }).join('');
     return '<div class="section"><div class="section-title">'+title+' <small>'+sub+'</small></div><div class="tbl-wrap"><table><thead><tr><th class="skuh" rowspan="2" style="min-width:140px;vertical-align:middle">SKU</th>'+dh+'</tr><tr>'+sh+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   }
-
   document.getElementById('content').innerHTML=
     buildSection('DOUGHNUTS \u2014 RED ROSE','Supplier: Red Rose Bakery',dSkus)+
     buildSection('PASTRIES \u2014 GALETA','Supplier: Galeta',pSkus);
@@ -280,6 +327,50 @@ async function load(){
     var inp=btn.parentNode.querySelector('input');
     inp.value=Math.max(0,(parseInt(inp.value)||0)+parseInt(btn.getAttribute('data-dir')));
   });
+}
+
+// CHAT
+function addMessage(role,text){
+  var div=document.createElement('div');
+  div.className='msg '+role;
+  div.textContent=text;
+  document.getElementById('chat-messages').appendChild(div);
+  document.getElementById('chat-messages').scrollTop=9999;
+  return div;
+}
+
+function askSuggestion(el){
+  document.getElementById('chat-input').value=el.textContent;
+  sendMessage();
+}
+
+async function sendMessage(){
+  var inp=document.getElementById('chat-input');
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  document.getElementById('chat-send').disabled=true;
+  addMessage('user',text);
+  chatHistory.push({role:'user',content:text});
+  var thinking=addMessage('assistant','Thinking...');
+  thinking.classList.add('thinking');
+  try{
+    var r=await fetch(EDGE,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:chatHistory,week:currentWeek})
+    });
+    var data=await r.json();
+    thinking.remove();
+    var reply=data.reply||data.error||'No response.';
+    addMessage('assistant',reply);
+    chatHistory.push({role:'assistant',content:reply});
+  }catch(e){
+    thinking.remove();
+    addMessage('assistant','Error: '+e.message);
+  }
+  document.getElementById('chat-send').disabled=false;
+  inp.focus();
 }
 
 // IMPORT
