@@ -40,4 +40,109 @@ tr:hover td{background:#faf9f6}
     <label>Week</label>
     <select id="week-pick" onchange="load()"></select>
   </div>
-  <div id="
+  <div id="content" class="ld">Loading...</div>
+</div>
+<script>
+var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnaW56eG9iaW5ycWRkYmJ1ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NDk1NzEsImV4cCI6MjA4NzQyNTU3MX0.GXsPlQN0oG7BcJHm-_-1vTHoIf84IF5lghYoOg-_7CQ';
+var BASE='https://uginzxobinrqddbbuenu.supabase.co/rest/v1';
+var H={apikey:KEY,Authorization:'Bearer '+KEY};
+var DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Glazed','Custard','Vegan Lotus','Pink Sprinkle','Chocolate Glazed','Chocolate Sprinkle','Double Chocolate','Tiramisu','Cinnamon Sugar','Honeycomb','Lemon','Jaffa Cake','Cinnamon Bun'];
+var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata'];
+
+async function get(path){
+  try{var r=await fetch(BASE+path,{headers:H});return await r.json();}
+  catch(e){return [];}
+}
+
+function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
+function addDays(d,n){var dt=new Date(d);dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
+function fmtShort(d){return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+
+function init(){
+  var today=new Date().toISOString().split('T')[0];
+  var thisMonday=getMonday(today);
+  var sel=document.getElementById('week-pick');
+  var weeks=[addDays(thisMonday,14),addDays(thisMonday,7),thisMonday];
+  for(var i=1;i<=12;i++) weeks.push(addDays(thisMonday,i*-7));
+  weeks.forEach(function(w){
+    var opt=document.createElement('option');
+    opt.value=w;
+    var end=addDays(w,6);
+    var label=fmtShort(w)+' \u2013 '+fmtShort(end);
+    if(w===thisMonday) label='This week: '+label;
+    else if(w===addDays(thisMonday,-7)) label='Last week: '+label;
+    else if(w===addDays(thisMonday,7)) label='Next week: '+label;
+    opt.textContent=label;
+    if(w===addDays(thisMonday,-7)) opt.selected=true;
+    sel.appendChild(opt);
+  });
+  load();
+}
+
+async function load(){
+  var monday=document.getElementById('week-pick').value;
+  if(!monday)return;
+  document.getElementById('content').innerHTML='<div class="ld">Loading...</div>';
+  var today=new Date().toISOString().split('T')[0];
+  var sunday=addDays(monday,6);
+  document.getElementById('wk').textContent='w/c '+fmtShort(monday)+' \u2013 '+fmtShort(sunday);
+
+  var orders=await get('/jb_orders?select=sku,qty,date&date=gte.'+monday+'&date=lte.'+sunday+'&limit=1000');
+  var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+monday+'&date=lte.'+sunday+'&limit=1000');
+  var recs=await get('/jb_forecast?select=sku,dow,rec_edify&limit=1000');
+
+  var oMap={},sMap={},rMap={};
+  orders.forEach(function(r){if(!oMap[r.sku])oMap[r.sku]={};oMap[r.sku][r.date]=parseInt(r.qty);});
+  sales.forEach(function(r){if(!sMap[r.sku])sMap[r.sku]={};sMap[r.sku][r.date]=parseInt(r.qty);});
+  recs.forEach(function(r){if(!rMap[r.sku])rMap[r.sku]={};rMap[r.sku][r.dow]=parseInt(r.rec_edify);});
+
+  var allSkus=Object.keys(Object.assign({},oMap,rMap));
+  var dSkus=allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}).sort();
+  var pSkus=allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}).sort();
+
+  if(!allSkus.length){
+    document.getElementById('content').innerHTML='<div class="ld">No data for this week</div>';
+    return;
+  }
+
+  function buildSection(title,skus){
+    if(!skus.length)return '';
+    var dayHeaders=DAYS.map(function(day,i){
+      var date=addDays(monday,i);
+      var isPast=date<today;
+      return '<th class="day" colspan="'+(isPast?4:1)+'">'+day.slice(0,3)+' '+fmtShort(date)+'</th>';
+    }).join('');
+    var subHeaders=DAYS.map(function(day,i){
+      var date=addDays(monday,i);
+      var isPast=date<today;
+      return isPast?'<th>Ord</th><th>Sold</th><th>Rec</th><th>&#916;</th>':'<th>Rec</th>';
+    }).join('');
+    var rows=skus.map(function(sku){
+      var cells=DAYS.map(function(day,i){
+        var date=addDays(monday,i);
+        var isPast=date<today;
+        var ord=(oMap[sku]&&oMap[sku][date]!==undefined)?oMap[sku][date]:'-';
+        var sol=(sMap[sku]&&sMap[sku][date]!==undefined)?sMap[sku][date]:'-';
+        var rec=(rMap[sku]&&rMap[sku][day]!==undefined)?rMap[sku][day]:'-';
+        if(isPast){
+          var delta=(rec!=='-'&&ord!=='-')?(parseInt(ord)-parseInt(rec)):null;
+          var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
+          var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
+          return '<td>'+ord+'</td><td>'+sol+'</td><td>'+rec+'</td><td'+dc+'>'+ds+'</td>';
+        }else{
+          return '<td><strong>'+(rec!=='-'?rec:'-')+'</strong></td>';
+        }
+      }).join('');
+      return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
+    }).join('');
+    return '<div class="section"><div class="section-title">'+title+'</div><div class="tbl-wrap"><table><thead><tr><th class="sku">SKU</th>'+dayHeaders+'</tr><tr><th></th>'+subHeaders+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }
+
+  document.getElementById('content').innerHTML=buildSection('DOUGHNUTS \u2014 RED ROSE',dSkus)+buildSection('PASTRIES \u2014 GALETA',pSkus);
+}
+
+init();
+</script>
+</body>
+</html>
