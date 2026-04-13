@@ -83,6 +83,11 @@ function badge(tf){
   if(tf<0.95) return '<span class="badge bdn">-'+((1-tf)*100).toFixed(0)+'%</span>';
   return '<span class="badge bfl">flat</span>';
 }
+function avgForSku(sku,rM){
+  if(!rM[sku]) return 0;
+  var vals=Object.values(rM[sku]);
+  return vals.reduce(function(s,v){return s+v.avg;},0)/vals.length;
+}
 
 function init(){
   var today=new Date().toISOString().split('T')[0];
@@ -128,8 +133,13 @@ async function load(){
   recs.forEach(function(r){if(!rM[r.sku])rM[r.sku]={};rM[r.sku][r.dow]={rec:+r.rec_edify,avg:+r.avg_sold,tf:+r.trend_factor,waste:+r.avg_waste_edify};});
 
   var allSkus=Object.keys(Object.assign({},oM,rM,loM));
-  var dSkus=allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}).sort();
-  var pSkus=allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}).sort();
+
+  function sortByAvg(skus){
+    return skus.sort(function(a,b){return avgForSku(b,rM)-avgForSku(a,rM);});
+  }
+
+  var dSkus=sortByAvg(allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}));
+  var pSkus=sortByAvg(allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}));
   if(!allSkus.length){document.getElementById('content').innerHTML='<div class="ld">No data</div>';return;}
 
   function buildSection(title,sub,skus){
