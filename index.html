@@ -72,24 +72,47 @@ input[type=file]{display:none}
 .mrow>div{flex:1}
 .uactions{margin-top:16px;display:flex;gap:8px;align-items:center}
 .uprogress{font-size:11px;color:#888}
-/* Chat */
-.chat-wrap{max-width:800px;margin:0 auto;display:flex;flex-direction:column;height:calc(100vh - 120px)}
-.chat-context{background:#fff;border:0.5px solid #e0ddd5;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:11px;color:#888}
-.chat-context strong{color:#3D4A35}
-.chat-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-bottom:12px}
-.msg{max-width:85%;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.5}
+
+/* Floating chat button */
+.chat-fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:#3D4A35;color:#EDE0CC;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:100;display:flex;align-items:center;justify-content:center}
+.chat-fab:hover{background:#4a5a40}
+
+/* Chat popup */
+.chat-popup{position:fixed;bottom:92px;right:28px;width:380px;height:520px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.15);z-index:101;display:none;flex-direction:column;overflow:hidden;border:0.5px solid #e0ddd5}
+.chat-popup.open{display:flex}
+.chat-header{background:#3D4A35;color:#EDE0CC;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.chat-header h3{font-size:13px;font-weight:500;letter-spacing:0.04em}
+.chat-close{background:none;border:none;color:#EDE0CC;font-size:18px;cursor:pointer;opacity:0.7;line-height:1}
+.chat-close:hover{opacity:1}
+.chat-suggestions{padding:10px 12px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:0.5px solid #f0ede5;flex-shrink:0}
+.sug{padding:4px 10px;background:#f5f3ef;border:0.5px solid #c8c4bc;border-radius:20px;font-size:10px;color:#3D4A35;cursor:pointer;white-space:nowrap}
+.sug:hover{background:#e8e4dc}
+.chat-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:9px 12px;border-radius:8px;font-size:12px;line-height:1.5;word-wrap:break-word}
 .msg.user{align-self:flex-end;background:#3D4A35;color:#EDE0CC;border-radius:8px 8px 2px 8px}
-.msg.assistant{align-self:flex-start;background:#fff;border:0.5px solid #e0ddd5;color:#1a1a1a;border-radius:8px 8px 8px 2px}
+.msg.assistant{align-self:flex-start;background:#f5f3ef;border:0.5px solid #e0ddd5;color:#1a1a1a;border-radius:8px 8px 8px 2px}
 .msg.thinking{opacity:0.5;font-style:italic}
-.chat-input-row{display:flex;gap:8px;padding-top:12px;border-top:0.5px solid #e0ddd5}
-.chat-input{flex:1;padding:10px 14px;border:0.5px solid #ccc;border-radius:6px;font-size:13px;font-family:inherit;resize:none;height:44px}
+.chat-input-row{display:flex;gap:6px;padding:10px 12px;border-top:0.5px solid #e0ddd5;flex-shrink:0}
+.chat-input{flex:1;padding:8px 12px;border:0.5px solid #ccc;border-radius:6px;font-size:12px;font-family:inherit;resize:none;height:38px;line-height:1.4}
 .chat-input:focus{outline:none;border-color:#3D4A35}
-.chat-send{padding:0 20px;background:#3D4A35;color:#EDE0CC;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+.chat-send{padding:0 14px;background:#3D4A35;color:#EDE0CC;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;flex-shrink:0}
 .chat-send:hover{background:#4a5a40}
 .chat-send:disabled{background:#ccc;cursor:not-allowed}
-.suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.sug{padding:6px 12px;background:#fff;border:0.5px solid #c8c4bc;border-radius:20px;font-size:11px;color:#3D4A35;cursor:pointer}
-.sug:hover{background:#f0ede5}
+
+/* Full chat tab */
+.chat-wrap{max-width:800px;margin:0 auto;display:flex;flex-direction:column;height:calc(100vh - 140px)}
+.chat-context{background:#fff;border:0.5px solid #e0ddd5;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:11px;color:#888}
+.chat-context strong{color:#3D4A35}
+.chat-full-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-bottom:12px}
+.chat-full-input-row{display:flex;gap:8px;padding-top:12px;border-top:0.5px solid #e0ddd5}
+.chat-full-input{flex:1;padding:10px 14px;border:0.5px solid #ccc;border-radius:6px;font-size:13px;font-family:inherit;resize:none;height:44px}
+.chat-full-input:focus{outline:none;border-color:#3D4A35}
+.chat-full-send{padding:0 20px;background:#3D4A35;color:#EDE0CC;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+.chat-full-send:hover{background:#4a5a40}
+.chat-full-send:disabled{background:#ccc;cursor:not-allowed}
+.full-sug{padding:6px 12px;background:#fff;border:0.5px solid #c8c4bc;border-radius:20px;font-size:11px;color:#3D4A35;cursor:pointer}
+.full-sug:hover{background:#f0ede5}
+.full-suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -119,30 +142,28 @@ input[type=file]{display:none}
 </div>
 </div>
 
-<!-- CHAT -->
+<!-- CHAT TAB -->
 <div id="pane-chat" style="display:none">
 <div class="wrap">
   <div class="chat-wrap">
-    <div class="chat-context">
-      <strong>Context:</strong> AI has access to live forecast data, 8w &amp; 4w trends, waste, recs, and this week's orders &amp; sales. Ask anything about the business.
+    <div class="chat-context"><strong>Context:</strong> AI has access to live forecast data, 8w &amp; 4w trends, waste, recs, and this week's orders &amp; sales.</div>
+    <div class="full-suggestions">
+      <div class="full-sug" onclick="askFull(this)">Which SKUs should I pull back on?</div>
+      <div class="full-sug" onclick="askFull(this)">What's trending up this week?</div>
+      <div class="full-sug" onclick="askFull(this)">Where is waste highest?</div>
+      <div class="full-sug" onclick="askFull(this)">What should I order more of on Saturday?</div>
+      <div class="full-sug" onclick="askFull(this)">Any divergence between 8w and 4w trends?</div>
     </div>
-    <div class="suggestions">
-      <div class="sug" onclick="askSuggestion(this)">Which SKUs should I pull back on?</div>
-      <div class="sug" onclick="askSuggestion(this)">What's trending up this week?</div>
-      <div class="sug" onclick="askSuggestion(this)">Where is waste highest?</div>
-      <div class="sug" onclick="askSuggestion(this)">What should I order more of on Saturday?</div>
-      <div class="sug" onclick="askSuggestion(this)">Any divergence between 8w and 4w trends?</div>
-    </div>
-    <div class="chat-messages" id="chat-messages"></div>
-    <div class="chat-input-row">
-      <textarea class="chat-input" id="chat-input" placeholder="Ask anything about your orders, sales, trends or waste..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
-      <button class="chat-send" id="chat-send" onclick="sendMessage()">Send</button>
+    <div class="chat-full-messages" id="full-messages"></div>
+    <div class="chat-full-input-row">
+      <textarea class="chat-full-input" id="full-input" placeholder="Ask anything about orders, sales, trends or waste..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFull();}"></textarea>
+      <button class="chat-full-send" id="full-send" onclick="sendFull()">Send</button>
     </div>
   </div>
 </div>
 </div>
 
-<!-- IMPORT -->
+<!-- IMPORT TAB -->
 <div id="pane-import" style="display:none">
 <div class="wrap">
   <div class="card">
@@ -194,6 +215,26 @@ input[type=file]{display:none}
 </div>
 </div>
 
+<!-- FLOATING CHAT -->
+<button class="chat-fab" onclick="togglePopup()" title="AI Assistant">💬</button>
+<div class="chat-popup" id="chat-popup">
+  <div class="chat-header">
+    <h3>AI Assistant</h3>
+    <button class="chat-close" onclick="togglePopup()">&#x2715;</button>
+  </div>
+  <div class="chat-suggestions">
+    <div class="sug" onclick="askPopup(this)">Pull back suggestions?</div>
+    <div class="sug" onclick="askPopup(this)">Highest waste SKUs?</div>
+    <div class="sug" onclick="askPopup(this)">Saturday order advice?</div>
+    <div class="sug" onclick="askPopup(this)">4w vs 8w divergence?</div>
+  </div>
+  <div class="chat-messages" id="popup-messages"></div>
+  <div class="chat-input-row">
+    <textarea class="chat-input" id="popup-input" placeholder="Ask about your orders..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPopup();}"></textarea>
+    <button class="chat-send" id="popup-send" onclick="sendPopup()">Send</button>
+  </div>
+</div>
+
 <script>
 var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnaW56eG9iaW5ycWRkYmJ1ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NDk1NzEsImV4cCI6MjA4NzQyNTU3MX0.GXsPlQN0oG7BcJHm-_-1vTHoIf84IF5lghYoOg-_7CQ';
 var BASE='https://uginzxobinrqddbbuenu.supabase.co/rest/v1';
@@ -206,7 +247,8 @@ var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Gl
 var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata','Cinnamon Bun'];
 var SKU_MAP={'glazed chocolate':'Chocolate Sprinkle','chocolate glazed':'Chocolate Sprinkle','choc glazed':'Chocolate Sprinkle','choc sprinkle':'Chocolate Sprinkle','chocolate sprinkle doughnut':'Chocolate Sprinkle','nutella':'Nutella','pistachio':'Pistachio','kinder bueno':'Kinder Bueno','red velvet':'Red Velvet','vegan jam':'Vegan Jam','glazed':'Glazed','custard':'Custard','vegan lotus':'Vegan Lotus','pink sprinkle':'Pink Sprinkle','chocolate sprinkle':'Chocolate Sprinkle','tiramisu':'Tiramisu','cinnamon sugar':'Cinnamon Sugar','honeycomb':'Honeycomb','lemon':'Lemon','jaffa cake':'Jaffa Cake','almond croissant':'Almond Croissant','plain croissant':'Plain Croissant','plain nata':'Plain Nata','pain au chocolat':'Pain Au Chocolat','pain aux raisin':'Pain Aux Raisin','raspberry nata':'Raspberry Nata','cinnamon bun':'Cinnamon Bun'};
 var uploadState={sales:{rows:[],headers:[]},orders:{rows:[],headers:[]}};
-var chatHistory=[];
+var popupHistory=[];
+var fullHistory=[];
 var currentWeek={};
 
 function showTab(t){
@@ -215,8 +257,12 @@ function showTab(t){
     document.getElementById('tab-'+p).className='tab'+(p===t?' active':'');
   });
 }
+function togglePopup(){
+  var p=document.getElementById('chat-popup');
+  p.classList.toggle('open');
+  if(p.classList.contains('open')) document.getElementById('popup-input').focus();
+}
 
-// DASHBOARD
 async function get(p){try{var r=await fetch(BASE+p,{headers:H});return await r.json();}catch(e){return[];}}
 function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
 function addDays(d,n){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
@@ -329,48 +375,56 @@ async function load(){
   });
 }
 
-// CHAT
-function addMessage(role,text){
+// SHARED CHAT
+async function callAI(text,history,sendBtn){
+  history.push({role:'user',content:text});
+  sendBtn.disabled=true;
+  try{
+    var r=await fetch(EDGE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,week:currentWeek})});
+    var data=await r.json();
+    var reply=data.reply||data.error||'No response.';
+    history.push({role:'assistant',content:reply});
+    return reply;
+  }catch(e){return 'Error: '+e.message;}
+  finally{sendBtn.disabled=false;}
+}
+
+function addMsg(containerId,role,text){
   var div=document.createElement('div');
   div.className='msg '+role;
   div.textContent=text;
-  document.getElementById('chat-messages').appendChild(div);
-  document.getElementById('chat-messages').scrollTop=9999;
+  var c=document.getElementById(containerId);
+  c.appendChild(div);
+  c.scrollTop=9999;
   return div;
 }
 
-function askSuggestion(el){
-  document.getElementById('chat-input').value=el.textContent;
-  sendMessage();
+// POPUP CHAT
+function askPopup(el){document.getElementById('popup-input').value=el.textContent;sendPopup();}
+async function sendPopup(){
+  var inp=document.getElementById('popup-input');
+  var text=inp.value.trim();if(!text) return;
+  inp.value='';
+  addMsg('popup-messages','user',text);
+  var thinking=addMsg('popup-messages','assistant','Thinking...');
+  thinking.classList.add('thinking');
+  var reply=await callAI(text,popupHistory,document.getElementById('popup-send'));
+  thinking.remove();
+  addMsg('popup-messages','assistant',reply);
 }
 
-async function sendMessage(){
-  var inp=document.getElementById('chat-input');
-  var text=inp.value.trim();
-  if(!text) return;
+// FULL CHAT TAB
+function askFull(el){document.getElementById('full-input').value=el.textContent;sendFull();}
+async function sendFull(){
+  var inp=document.getElementById('full-input');
+  var text=inp.value.trim();if(!text) return;
   inp.value='';
-  document.getElementById('chat-send').disabled=true;
-  addMessage('user',text);
-  chatHistory.push({role:'user',content:text});
-  var thinking=addMessage('assistant','Thinking...');
+  addMsg('full-messages','user',text);
+  var thinking=addMsg('full-messages','assistant','Thinking...');
   thinking.classList.add('thinking');
-  try{
-    var r=await fetch(EDGE,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:chatHistory,week:currentWeek})
-    });
-    var data=await r.json();
-    thinking.remove();
-    var reply=data.reply||data.error||'No response.';
-    addMessage('assistant',reply);
-    chatHistory.push({role:'assistant',content:reply});
-  }catch(e){
-    thinking.remove();
-    addMessage('assistant','Error: '+e.message);
-  }
-  document.getElementById('chat-send').disabled=false;
-  inp.focus();
+  var reply=await callAI(text,fullHistory,document.getElementById('full-send'));
+  thinking.remove();
+  addMsg('full-messages','assistant',reply);
 }
 
 // IMPORT
