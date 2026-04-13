@@ -9,7 +9,7 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:13px}
 .topbar{background:#3D4A35;color:#EDE0CC;padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
 .topbar h1{font-size:13px;font-weight:500;letter-spacing:0.06em}
-.topbar .meta{font-size:11px;opacity:0.7}
+.meta{font-size:11px;opacity:0.7}
 .wrap{max-width:1400px;margin:0 auto;padding:20px 16px}
 .controls{display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap}
 .controls label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
@@ -24,7 +24,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 table{width:100%;border-collapse:collapse;background:#fff;border:0.5px solid #e0ddd5;font-size:12px}
 thead tr:first-child th{font-size:10px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.06em;padding:7px 10px;text-align:center;background:#f0ede5;border-bottom:0.5px solid #ddd9d0;white-space:nowrap}
 thead tr:first-child th.skuh{text-align:left;background:#f5f3ef}
-thead tr:last-child th{font-size:9px;font-weight:500;color:#aaa;text-transform:uppercase;letter-spacing:0.04em;padding:4px 10px;text-align:center;background:#faf9f6;border-bottom:1px solid #e0ddd5;white-space:nowrap}
+thead tr:last-child th{font-size:9px;font-weight:500;color:#aaa;text-transform:uppercase;padding:4px 10px;text-align:center;background:#faf9f6;border-bottom:1px solid #e0ddd5;white-space:nowrap}
 td{padding:7px 10px;border-bottom:0.5px solid #f0ede5;text-align:center;vertical-align:middle}
 td.sku{text-align:left;font-weight:500;white-space:nowrap;min-width:140px}
 tr:last-child td{border-bottom:none}
@@ -67,14 +67,18 @@ var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6In
 var BASE='https://uginzxobinrqddbbuenu.supabase.co/rest/v1';
 var H={apikey:KEY,Authorization:'Bearer '+KEY};
 var DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Glazed','Custard','Vegan Lotus','Pink Sprinkle','Chocolate Glazed','Chocolate Sprinkle','Double Chocolate','Tiramisu','Cinnamon Sugar','Honeycomb','Lemon','Jaffa Cake','Cinnamon Bun'];
+var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Glazed','Custard','Vegan Lotus','Pink Sprinkle','Chocolate Glazed','Tiramisu','Cinnamon Sugar','Honeycomb','Lemon','Jaffa Cake','Cinnamon Bun'];
 var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata'];
-var MGR={};
 
 async function get(p){try{var r=await fetch(BASE+p,{headers:H});return await r.json();}catch(e){return[];}}
 function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
 function addDays(d,n){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
 function fmt(d){return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+function badge(tf){
+  if(tf>1.05) return '<span class="badge bup">+'+((tf-1)*100).toFixed(0)+'%</span>';
+  if(tf<0.95) return '<span class="badge bdn">-'+((1-tf)*100).toFixed(0)+'%</span>';
+  return '<span class="badge bfl">flat</span>';
+}
 
 function init(){
   var today=new Date().toISOString().split('T')[0];
@@ -99,7 +103,6 @@ function init(){
 async function load(){
   var mon=document.getElementById('week-pick').value;
   if(!mon) return;
-  MGR={};
   document.getElementById('content').innerHTML='<div class="ld">Loading...</div>';
   var today=new Date().toISOString().split('T')[0];
   var sun=addDays(mon,6);
@@ -125,12 +128,65 @@ async function load(){
   var pSkus=allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}).sort();
   if(!allSkus.length){document.getElementById('content').innerHTML='<div class="ld">No data</div>';return;}
 
-  function badge(tf){
-    if(tf>1.05) return '<span class="badge bup">+'+((tf-1)*100).toFixed(0)+'%</span>';
-    if(tf<0.95) return '<span class="badge bdn">-'+((1-tf)*100).toFixed(0)+'%</span>';
-    return '<span class="badge bfl">flat</span>';
-  }
-
   function buildSection(title,sub,skus){
     if(!skus.length) return '';
-    var dh='<th class="skuh" rowspan="2" style="min-width:140p
+    var dh='';
+    var sh='';
+    DAYS.forEach(function(day,i){
+      var date=addDays(mon,i);
+      var past=date<today;
+      var cols=past?7:4;
+      dh+='<th colspan="'+cols+'" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
+      if(past) sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>Trend</th><th>&Delta; Rec</th>';
+      else sh+='<th style="border-left:2px solid #c8c4bc">Avg Sold</th><th>Trend</th><th>Avg Waste</th><th>Mgr Order</th>';
+    });
+
+    var rows=skus.map(function(sku){
+      var cells='';
+      DAYS.forEach(function(day,i){
+        var date=addDays(mon,i);
+        var ldate=addDays(lmon,i);
+        var past=date<today;
+        var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,tf:1,waste:0};
+        var tf=info.tf;
+        var wc=info.waste>2?'whi':'wok';
+        if(past){
+          var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
+          var lws=(lsM[sku]&&lsM[sku][ldate]!==undefined)?lsM[sku][ldate]:'-';
+          var lww=(lwo!=='-'&&lws!=='-')?(lwo-lws):'-';
+          var ord=(oM[sku]&&oM[sku][date]!==undefined)?oM[sku][date]:'-';
+          var sol=(sM[sku]&&sM[sku][date]!==undefined)?sM[sku][date]:'-';
+          var delta=(info.rec&&ord!=='-')?(ord-info.rec):null;
+          var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
+          var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
+          var lwwc=(lww!=='-'&&lww>2)?'whi':'wok';
+          cells+='<td style="border-left:2px solid #eee">'+lwo+'</td><td>'+lws+'</td><td class="'+lwwc+'">'+lww+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+badge(tf)+'</td><td'+dc+'>'+ds+'</td>';
+        } else {
+          var avgSold=info.avg?info.avg.toFixed(1):'-';
+          var avgWaste=info.waste?info.waste.toFixed(1):'0';
+          cells+='<td style="border-left:2px solid #eee">'+avgSold+'</td><td>'+badge(tf)+'</td><td class="'+wc+'">'+avgWaste+'</td><td><div class="stepper"><button class="adj" data-d="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button class="adj" data-d="1">+</button></div></td>';
+        }
+      });
+      return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
+    }).join('');
+
+    return '<div class="section"><div class="section-title">'+title+' <small>'+sub+'</small></div><div class="tbl-wrap"><table><thead><tr><th class="skuh" rowspan="2" style="min-width:140px;vertical-align:middle">SKU</th>'+dh+'</tr><tr>'+sh+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }
+
+  document.getElementById('content').innerHTML=
+    buildSection('DOUGHNUTS \u2014 RED ROSE','Supplier: Red Rose Bakery',dSkus)+
+    buildSection('PASTRIES \u2014 GALETA','Supplier: Galeta',pSkus);
+
+  document.getElementById('content').addEventListener('click',function(e){
+    var btn=e.target.closest('.adj');
+    if(!btn) return;
+    var inp=btn.parentNode.querySelector('input');
+    var d=parseInt(btn.getAttribute('data-d'));
+    inp.value=Math.max(0,(parseInt(inp.value)||0)+d);
+  });
+}
+
+init();
+</script>
+</body>
+</html>
