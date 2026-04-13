@@ -37,6 +37,7 @@ tr:hover td{background:#faf9f6}
 .bfl{background:#f0ede5;color:#888}
 .whi{color:#a02c2c}
 .wok{color:#888}
+.lw{color:#aaa;font-size:11px}
 .stepper{display:flex;align-items:center;border:0.5px solid #c8c4bc;border-radius:5px;overflow:hidden;width:90px;margin:0 auto}
 .stepper button{background:#f5f3ef;border:none;width:24px;height:28px;font-size:14px;cursor:pointer;color:#3D4A35;font-weight:600;flex-shrink:0}
 .stepper button:hover{background:#e8e4dc}
@@ -67,10 +68,13 @@ var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6In
 var BASE='https://uginzxobinrqddbbuenu.supabase.co/rest/v1';
 var H={apikey:KEY,Authorization:'Bearer '+KEY};
 var DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Glazed','Custard','Vegan Lotus','Pink Sprinkle','Chocolate Glazed','Tiramisu','Cinnamon Sugar','Honeycomb','Lemon','Jaffa Cake','Cinnamon Bun'];
-var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata'];
+var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Glazed','Custard','Vegan Lotus','Pink Sprinkle','Chocolate Glazed','Tiramisu','Cinnamon Sugar','Honeycomb','Lemon','Jaffa Cake'];
+var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata','Cinnamon Bun'];
 
-async function get(p){try{var r=await fetch(BASE+p,{headers:H});return await r.json();}catch(e){return[];}}
+async function get(p){
+  try{var r=await fetch(BASE+p,{headers:H});return await r.json();}
+  catch(e){return[];}
+}
 function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
 function addDays(d,n){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
 function fmt(d){return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
@@ -135,10 +139,13 @@ async function load(){
     DAYS.forEach(function(day,i){
       var date=addDays(mon,i);
       var past=date<today;
-      var cols=past?7:4;
+      var cols=past?7:6;
       dh+='<th colspan="'+cols+'" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
-      if(past) sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>Trend</th><th>&Delta; Rec</th>';
-      else sh+='<th style="border-left:2px solid #c8c4bc">Avg Sold</th><th>Trend</th><th>Avg Waste</th><th>Mgr Order</th>';
+      if(past){
+        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>Trend</th><th>&Delta; Rec</th>';
+      } else {
+        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Avg Sold</th><th>Trend</th><th>Avg Waste</th><th>Mgr Order</th>';
+      }
     });
 
     var rows=skus.map(function(sku){
@@ -150,9 +157,9 @@ async function load(){
         var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,tf:1,waste:0};
         var tf=info.tf;
         var wc=info.waste>2?'whi':'wok';
+        var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
+        var lws=(lsM[sku]&&lsM[sku][ldate]!==undefined)?lsM[sku][ldate]:'-';
         if(past){
-          var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
-          var lws=(lsM[sku]&&lsM[sku][ldate]!==undefined)?lsM[sku][ldate]:'-';
           var lww=(lwo!=='-'&&lws!=='-')?(lwo-lws):'-';
           var ord=(oM[sku]&&oM[sku][date]!==undefined)?oM[sku][date]:'-';
           var sol=(sM[sku]&&sM[sku][date]!==undefined)?sM[sku][date]:'-';
@@ -160,11 +167,11 @@ async function load(){
           var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
           var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
           var lwwc=(lww!=='-'&&lww>2)?'whi':'wok';
-          cells+='<td style="border-left:2px solid #eee">'+lwo+'</td><td>'+lws+'</td><td class="'+lwwc+'">'+lww+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+badge(tf)+'</td><td'+dc+'>'+ds+'</td>';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td class="'+lwwc+'">'+lww+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+badge(tf)+'</td><td'+dc+'>'+ds+'</td>';
         } else {
           var avgSold=info.avg?info.avg.toFixed(1):'-';
           var avgWaste=info.waste?info.waste.toFixed(1):'0';
-          cells+='<td style="border-left:2px solid #eee">'+avgSold+'</td><td>'+badge(tf)+'</td><td class="'+wc+'">'+avgWaste+'</td><td><div class="stepper"><button class="adj" data-d="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button class="adj" data-d="1">+</button></div></td>';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+avgSold+'</td><td>'+badge(tf)+'</td><td class="'+wc+'">'+avgWaste+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td>';
         }
       });
       return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
@@ -178,11 +185,10 @@ async function load(){
     buildSection('PASTRIES \u2014 GALETA','Supplier: Galeta',pSkus);
 
   document.getElementById('content').addEventListener('click',function(e){
-    var btn=e.target.closest('.adj');
+    var btn=e.target.closest('button[data-dir]');
     if(!btn) return;
     var inp=btn.parentNode.querySelector('input');
-    var d=parseInt(btn.getAttribute('data-d'));
-    inp.value=Math.max(0,(parseInt(inp.value)||0)+d);
+    inp.value=Math.max(0,(parseInt(inp.value)||0)+parseInt(btn.getAttribute('data-dir')));
   });
 }
 
