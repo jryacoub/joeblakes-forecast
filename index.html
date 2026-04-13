@@ -39,6 +39,9 @@ tr:hover td{background:#faf9f6}
 .bup{background:#e8f3dc;color:#3a6910}
 .bdn{background:#fce8e8;color:#a02c2c}
 .bfl{background:#f0ede5;color:#888}
+.wbup{background:#fce8e8;color:#a02c2c}
+.wbdn{background:#e8f3dc;color:#3a6910}
+.wbfl{background:#f0ede5;color:#888}
 .wlo{color:#3a6910;font-weight:600}
 .wmd{color:#b07800;font-weight:600}
 .whi{color:#a02c2c;font-weight:600}
@@ -129,9 +132,8 @@ input[type=file]{display:none}
     <label>Week</label>
     <select id="week-pick" onchange="load()"></select>
     <div class="legend">
-      <span><span class="dot" style="background:#3a6910"></span>Waste &lt;10%</span>
-      <span><span class="dot" style="background:#b07800"></span>Waste 10–20%</span>
-      <span><span class="dot" style="background:#a02c2c"></span>Waste &gt;20%</span>
+      <span><span class="dot" style="background:#3a6910"></span>Waste improving</span>
+      <span><span class="dot" style="background:#a02c2c"></span>Waste worsening</span>
     </div>
   </div>
   <div id="content" class="ld">Loading...</div>
@@ -141,13 +143,13 @@ input[type=file]{display:none}
 <div id="pane-chat" style="display:none">
 <div class="wrap">
   <div class="chat-wrap">
-    <div class="chat-context"><strong>Context:</strong> AI has access to live forecast data, 8w &amp; 4w trends, waste rate %, smart recs, and this week's orders &amp; sales.</div>
+    <div class="chat-context"><strong>Context:</strong> AI has access to live forecast, 8w &amp; 4w trends, avg waste, waste trend, smart recs and this week's actuals.</div>
     <div class="full-suggestions">
       <div class="full-sug" onclick="askFull(this)">Which SKUs should I pull back on?</div>
+      <div class="full-sug" onclick="askFull(this)">Where is waste getting worse?</div>
       <div class="full-sug" onclick="askFull(this)">What's trending up this week?</div>
-      <div class="full-sug" onclick="askFull(this)">Where is waste rate highest?</div>
-      <div class="full-sug" onclick="askFull(this)">What should I order more of on Saturday?</div>
-      <div class="full-sug" onclick="askFull(this)">Any divergence between 8w and 4w trends?</div>
+      <div class="full-sug" onclick="askFull(this)">Saturday order advice?</div>
+      <div class="full-sug" onclick="askFull(this)">4w vs 8w divergence?</div>
     </div>
     <div class="chat-full-messages" id="full-messages"></div>
     <div class="chat-full-input-row">
@@ -217,7 +219,7 @@ input[type=file]{display:none}
   </div>
   <div class="chat-suggestions">
     <div class="sug" onclick="askPopup(this)">Pull back suggestions?</div>
-    <div class="sug" onclick="askPopup(this)">Highest waste SKUs?</div>
+    <div class="sug" onclick="askPopup(this)">Waste getting worse?</div>
     <div class="sug" onclick="askPopup(this)">Saturday order advice?</div>
     <div class="sug" onclick="askPopup(this)">4w vs 8w divergence?</div>
   </div>
@@ -260,16 +262,26 @@ async function get(p){try{var r=await fetch(BASE+p,{headers:H});return await r.j
 function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
 function addDays(d,n){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
 function fmt(d){return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+
 function badge(tf){
   if(tf>1.05) return '<span class="badge bup">+'+((tf-1)*100).toFixed(0)+'%</span>';
   if(tf<0.95) return '<span class="badge bdn">-'+((1-tf)*100).toFixed(0)+'%</span>';
   return '<span class="badge bfl">flat</span>';
 }
-function wasteClass(pct){
-  if(pct<10) return 'wlo';
-  if(pct<20) return 'wmd';
+
+function wasteTrendBadge(pct){
+  if(pct===null||pct===undefined) return '<span class="badge bfl">—</span>';
+  if(pct>10) return '<span class="badge wbup">+'+Math.round(pct)+'%</span>';
+  if(pct<-10) return '<span class="badge wbdn">'+Math.round(pct)+'%</span>';
+  return '<span class="badge bfl">flat</span>';
+}
+
+function wasteClass(v){
+  if(v<=1) return 'wlo';
+  if(v<=4) return 'wmd';
   return 'whi';
 }
+
 function avgForSku(sku,rM){
   if(!rM[sku]) return 0;
   var vals=Object.values(rM[sku]);
@@ -306,11 +318,13 @@ async function load(){
   var lsun=addDays(sun,-7);
   currentWeek={mon,sun,lmon,lsun};
   document.getElementById('meta').textContent='w/c '+fmt(mon)+' \u2013 '+fmt(sun);
+
   var orders=await get('/jb_orders?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var lorders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
   var lsales=await get('/jb_sales?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
-  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold,avg_sold_4w,trend_factor,trend_factor4,dampened_trend,waste_rate_pct&limit=1000');
+  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold,avg_sold_4w,trend_factor,trend_factor4,dampened_trend,waste_rate_pct,avg_waste_best,waste_trend_pct&limit=1000');
+
   var oM={},sM={},loM={},lsM={},rM={};
   orders.forEach(function(r){if(!oM[r.sku])oM[r.sku]={};oM[r.sku][r.date]=+r.qty;});
   sales.forEach(function(r){if(!sM[r.sku])sM[r.sku]={};sM[r.sku][r.date]=+r.qty;});
@@ -325,9 +339,12 @@ async function load(){
       tf:+r.trend_factor,
       tf4:+r.trend_factor4,
       dtf:+r.dampened_trend,
-      wpct:+r.waste_rate_pct
+      wpct:+r.waste_rate_pct,
+      waste:+r.avg_waste_best,
+      wtrend:r.waste_trend_pct!==null?+r.waste_trend_pct:null
     };
   });
+
   var allSkus=Object.keys(Object.assign({},oM,rM,loM));
   function sortByAvg(skus){return skus.sort(function(a,b){return avgForSku(b,rM)-avgForSku(a,rM);});}
   var dSkus=sortByAvg(allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}));
@@ -340,22 +357,23 @@ async function load(){
     DAYS.forEach(function(day,i){
       var date=addDays(mon,i);
       var past=date<today;
-      var cols=past?8:9;
+      var cols=past?8:10;
       dh+='<th colspan="'+cols+'" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
       if(past){
         sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>8w Trend</th><th>4w Trend</th><th>&Delta; Rec</th>';
       } else {
-        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Avg Sold</th><th>8w Trend</th><th>4w Trend</th><th>Waste %</th><th>Mgr Order</th><th style="color:#C9A84C">AI Adj</th>';
+        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Avg Sold</th><th>8w Trend</th><th>4w Trend</th><th>Avg Waste</th><th>Waste Trend</th><th>Mgr Order</th><th style="color:#C9A84C">AI Adj</th>';
       }
     });
+
     var rows=skus.map(function(sku){
       var cells='';
       DAYS.forEach(function(day,i){
         var date=addDays(mon,i);
         var ldate=addDays(lmon,i);
         var past=date<today;
-        var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,avg4:0,tf:1,tf4:1,dtf:1,wpct:0};
-        var wc=wasteClass(info.wpct);
+        var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,avg4:0,tf:1,tf4:1,dtf:1,wpct:0,waste:0,wtrend:null};
+        var wc=wasteClass(info.waste);
         var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
         var lws=(lsM[sku]&&lsM[sku][ldate]!==undefined)?lsM[sku][ldate]:'-';
         if(past){
@@ -369,8 +387,8 @@ async function load(){
           cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td class="'+lwwc+'">'+lww+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+badge(info.tf)+'</td><td>'+badge(info.tf4)+'</td><td'+dc+'>'+ds+'</td>';
         } else {
           var avgSold=info.avg?info.avg.toFixed(1):'-';
-          var wpctStr=info.wpct?info.wpct.toFixed(0)+'%':'0%';
-          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+avgSold+'</td><td>'+badge(info.tf)+'</td><td>'+badge(info.tf4)+'</td><td class="'+wc+'">'+wpctStr+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td><td class="ai-adj">—</td>';
+          var wasteVol=info.waste?info.waste.toFixed(1):'0';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+avgSold+'</td><td>'+badge(info.tf)+'</td><td>'+badge(info.tf4)+'</td><td class="'+wc+'">'+wasteVol+'</td><td>'+wasteTrendBadge(info.wtrend)+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td><td class="ai-adj">—</td>';
         }
       });
       return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
@@ -381,6 +399,7 @@ async function load(){
   document.getElementById('content').innerHTML=
     buildSection('DOUGHNUTS \u2014 RED ROSE','Supplier: Red Rose Bakery',dSkus)+
     buildSection('PASTRIES \u2014 GALETA','Supplier: Galeta',pSkus);
+
   document.getElementById('content').addEventListener('click',function(e){
     var btn=e.target.closest('button[data-dir]');
     if(!btn) return;
