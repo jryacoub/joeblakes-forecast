@@ -41,4 +41,61 @@ tr:hover td{background:#faf9f6}
   <div id="content" class="ld">Loading...</div>
 </div>
 <script>
-var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnaW56eG9iaW5ycWRkYmJ1ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NDk1NzEsImV4cCI6MjA4NzQyNTU3MX0.GX
+var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnaW56eG9iaW5ycWRkYmJ1ZW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NDk1NzEsImV4cCI6MjA4NzQyNTU3MX0.GXsPlQN0oG7BcJHm-_-1vTHoIf84IF5lghYoOg-_7CQ';
+var BASE='https://uginzxobinrqddbbuenu.supabase.co/rest/v1';
+var H={apikey:KEY,Authorization:'Bearer '+KEY};
+var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Glazed','Custard','Vegan Lotus','Pink Sprinkle','Chocolate Glazed','Chocolate Sprinkle','Double Chocolate','Tiramisu','Cinnamon Sugar','Honeycomb','Lemon','Jaffa Cake','Cinnamon Bun'];
+var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata'];
+
+async function get(path){var r=await fetch(BASE+path,{headers:H});return r.json();}
+
+async function init(){
+  var rows=await get('/jb_orders?select=date&order=date.desc&limit=200');
+  var dates=[...new Set(rows.map(function(r){return r.date;}))].slice(0,28);
+  var sel=document.getElementById('date-pick');
+  dates.forEach(function(d){
+    var opt=document.createElement('option');
+    opt.value=d;
+    opt.textContent=new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    sel.appendChild(opt);
+  });
+  load();
+}
+
+async function load(){
+  var date=document.getElementById('date-pick').value;
+  if(!date)return;
+  document.getElementById('content').innerHTML='<div class="ld">Loading...</div>';
+  var dow=new Date(date).toLocaleDateString('en-US',{weekday:'long'});
+  var orders=await get('/jb_orders?select=sku,qty&date=eq.'+date);
+  var sales=await get('/jb_sales?select=sku,qty&date=eq.'+date);
+  var recs=await get('/jb_forecast?select=sku,rec_edify&dow=eq.'+dow);
+  var oMap={},sMap={},rMap={};
+  orders.forEach(function(r){oMap[r.sku]=parseInt(r.qty);});
+  sales.forEach(function(r){sMap[r.sku]=parseInt(r.qty);});
+  recs.forEach(function(r){rMap[r.sku]=parseInt(r.rec_edify);});
+  var allSkus=Object.keys(oMap);
+  var dSkus=allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}).sort();
+  var pSkus=allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}).sort();
+  document.getElementById('wk').textContent=new Date(date).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('content').innerHTML=buildSection('DOUGHNUTS — RED ROSE',dSkus,oMap,sMap,rMap)+buildSection('PASTRIES — GALETA',pSkus,oMap,sMap,rMap);
+}
+
+function buildSection(title,skus,oMap,sMap,rMap){
+  if(!skus.length)return '';
+  var rows=skus.map(function(sku){
+    var ord=oMap[sku]||0;
+    var sol=sMap[sku]!==undefined?sMap[sku]:'-';
+    var rec=rMap[sku]!==undefined?rMap[sku]:'-';
+    var delta=(rec!=='-'&&ord)?(ord-rec):null;
+    var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
+    var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
+    return '<tr><td>'+sku+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+rec+'</td><td'+dc+'>'+ds+'</td></tr>';
+  }).join('');
+  return '<div class="section"><div class="section-title">'+title+'</div><table><thead><tr><th>SKU</th><th>Ordered</th><th>Sold</th><th>Model rec</th><th>Delta</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+init();
+</script>
+</body>
+</html>
