@@ -43,6 +43,28 @@ tr:hover td{background:#faf9f6}
 .b-wt{background:#fce8e8;color:#a02c2c}
 .b-hd{background:#f0ede5;color:#888}
 .ld{text-align:center;padding:3rem;color:#888}
+/* Order tab */
+.order-wrap{max-width:1200px;margin:0 auto}
+.order-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.order-header h2{font-size:13px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.08em}
+.order-header .sub{font-size:11px;color:#888}
+.otable{width:100%;border-collapse:collapse;background:#fff;border:0.5px solid #e0ddd5;font-size:12px}
+.otable thead th{background:#f0ede5;padding:8px 12px;font-size:10px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;text-align:center;border-bottom:1px solid #ddd9d0}
+.otable thead th.day-head{border-left:2px solid #c8c4bc}
+.otable thead th.sku-head{text-align:left;min-width:150px}
+.otable thead tr.sub-head th{background:#faf9f6;font-size:9px;color:#aaa;font-weight:500;padding:4px 12px;border-bottom:1px solid #e0ddd5}
+.otable tbody td{padding:8px 12px;border-bottom:0.5px solid #f0ede5;text-align:center;vertical-align:middle}
+.otable tbody td.sku{text-align:left;font-weight:500;white-space:nowrap}
+.otable tbody td.sect{background:#f5f3ef;font-size:10px;font-weight:700;color:#3D4A35;text-transform:uppercase;letter-spacing:0.08em;text-align:left;padding:6px 12px;border-bottom:1px solid #e0ddd5}
+.otable tbody tr:last-child td{border-bottom:none}
+.otable tbody tr:hover td{background:#faf9f6}
+.otable tbody tr:hover td.sect{background:#f5f3ef}
+.rec-num{font-size:16px;font-weight:800;color:#1a1a1a}
+.waste-num{font-size:12px;color:#888}
+.waste-hi{color:#a02c2c;font-weight:600}
+.lw-num{font-size:12px;color:#aaa}
+.day-sep{border-left:2px solid #e0ddd5}
+/* cards */
 .card{background:#fff;border:0.5px solid #e0ddd5;border-radius:8px;padding:24px;margin-bottom:24px;max-width:800px}
 .card h2{font-size:13px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
 .card .sub{font-size:11px;color:#888;margin-bottom:20px}
@@ -110,12 +132,29 @@ input[type=file]{display:none}
   <div class="meta" id="meta"></div>
 </div>
 <div class="tabs">
-  <div class="tab active" id="tab-dashboard" onclick="showTab('dashboard')">Dashboard</div>
+  <div class="tab active" id="tab-order" onclick="showTab('order')">Order</div>
+  <div class="tab" id="tab-dashboard" onclick="showTab('dashboard')">Analysis</div>
   <div class="tab" id="tab-chat" onclick="showTab('chat')">AI Assistant</div>
   <div class="tab" id="tab-import" onclick="showTab('import')">Import Data</div>
 </div>
 
-<div id="pane-dashboard">
+<!-- ORDER TAB -->
+<div id="pane-order">
+<div class="wrap">
+  <div class="order-wrap">
+    <div class="order-header">
+      <div>
+        <h2>This Week's Order Guide</h2>
+        <div class="sub" id="order-sub">Loading...</div>
+      </div>
+    </div>
+    <div id="order-content" class="ld">Loading...</div>
+  </div>
+</div>
+</div>
+
+<!-- ANALYSIS TAB -->
+<div id="pane-dashboard" style="display:none">
 <div class="wrap">
   <div class="controls">
     <label>Week</label>
@@ -132,6 +171,7 @@ input[type=file]{display:none}
 </div>
 </div>
 
+<!-- CHAT TAB -->
 <div id="pane-chat" style="display:none">
 <div class="wrap">
   <div class="chat-wrap">
@@ -151,6 +191,7 @@ input[type=file]{display:none}
 </div>
 </div>
 
+<!-- IMPORT TAB -->
 <div id="pane-import" style="display:none">
 <div class="wrap">
   <div class="card">
@@ -238,7 +279,7 @@ var fullHistory=[];
 var currentWeek={};
 
 function showTab(t){
-  ['dashboard','chat','import'].forEach(function(p){
+  ['order','dashboard','chat','import'].forEach(function(p){
     document.getElementById('pane-'+p).style.display=p===t?'block':'none';
     document.getElementById('tab-'+p).className='tab'+(p===t?' active':'');
   });
@@ -266,6 +307,85 @@ function nv(v){
   return f.toFixed(1);
 }
 
+// ── ORDER TAB ──────────────────────────────────────────────
+async function loadOrder(){
+  var today=new Date().toISOString().split('T')[0];
+  var mon=getMonday(today);
+  var sun=addDays(mon,6);
+  var lmon=addDays(mon,-7);
+  var lsun=addDays(sun,-7);
+  document.getElementById('order-sub').textContent=
+    'w/c '+fmt(mon)+' \u2013 '+fmt(sun)+' \u00b7 Last week: '+fmt(lmon)+' \u2013 '+fmt(lsun);
+
+  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,rec_rule&limit=1000');
+  var lorders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
+  var lwaste=await get('/jb_waste?select=sku,qty_edify,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
+
+  // Build maps
+  var rM={};// rM[sku][dow] = {rec, rule}
+  recs.forEach(function(r){
+    if(!rM[r.sku])rM[r.sku]={};
+    rM[r.sku][r.dow]={rec:+r.rec_edify,rule:r.rec_rule};
+  });
+  var loM={};// loM[sku][date] = qty
+  lorders.forEach(function(r){if(!loM[r.sku])loM[r.sku]={};loM[r.sku][r.date]=+r.qty;});
+  var lwM={};// lwM[sku][date] = waste
+  lwaste.forEach(function(r){if(!lwM[r.sku])lwM[r.sku]={};lwM[r.sku][r.date]=+r.qty_edify;});
+
+  var allSkus=Object.keys(rM);
+  function sortByAvgRec(skus){
+    return skus.sort(function(a,b){
+      var ar=Object.values(rM[a]||{}).reduce(function(s,v){return s+v.rec;},0);
+      var br=Object.values(rM[b]||{}).reduce(function(s,v){return s+v.rec;},0);
+      return br-ar;
+    });
+  }
+  var dSkus=sortByAvgRec(allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}));
+  var pSkus=sortByAvgRec(allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}));
+
+  function buildOrderTable(skus){
+    if(!skus.length) return '';
+    // Header
+    var dh='<th class="sku-head" rowspan="2">SKU</th>';
+    var sh='';
+    DAYS.forEach(function(day,i){
+      var date=addDays(mon,i);
+      var ldate=addDays(lmon,i);
+      dh+='<th colspan="3" class="day-head">'+day.slice(0,3)+' '+fmt(date)+'</th>';
+      sh+='<th class="day-sep">LW Ord</th><th>LW Waste</th><th style="background:#faf5e8;color:#3D4A35;font-weight:700">Rec</th>';
+    });
+
+    var rows=skus.map(function(sku){
+      var cells='';
+      DAYS.forEach(function(day,i){
+        var date=addDays(mon,i);
+        var ldate=addDays(lmon,i);
+        var info=(rM[sku]&&rM[sku][day])||{rec:0,rule:'hold'};
+        var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
+        var lww=(lwM[sku]&&lwM[sku][ldate]!==undefined)?lwM[sku][ldate]:'-';
+        var wc=lww!=='-'&&lww>0?'waste-hi':'waste-num';
+        var recStyle=info.rule==='sold_out'?'color:#3a6910':info.rule==='waste'?'color:#a02c2c':'';
+        cells+='<td class="day-sep lw-num">'+lwo+'</td>';
+        cells+='<td class="'+wc+'">'+lww+'</td>';
+        cells+='<td style="background:#faf5e8"><span class="rec-num" style="'+recStyle+'">'+info.rec+'</span></td>';
+      });
+      return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
+    }).join('');
+
+    return '<table class="otable"><thead><tr>'+dh+'</tr><tr>'+sh+'</tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+
+  var html='';
+  if(dSkus.length){
+    html+='<div class="section"><div class="section-title">Doughnuts \u2014 Red Rose <small>Supplier: Red Rose Bakery</small></div><div class="tbl-wrap">'+buildOrderTable(dSkus)+'</div></div>';
+  }
+  if(pSkus.length){
+    html+='<div class="section"><div class="section-title">Pastries \u2014 Galeta <small>Supplier: Galeta</small></div><div class="tbl-wrap">'+buildOrderTable(pSkus)+'</div></div>';
+  }
+  document.getElementById('order-content').innerHTML=html||'<div class="ld">No data</div>';
+}
+
+// ── ANALYSIS TAB ───────────────────────────────────────────
 function init(){
   var today=new Date().toISOString().split('T')[0];
   var mon=getMonday(today);
@@ -283,6 +403,8 @@ function init(){
     if(w===mon) o.selected=true;
     sel.appendChild(o);
   });
+  document.getElementById('meta').textContent='w/c '+fmt(mon)+' \u2013 '+fmt(addDays(mon,6));
+  loadOrder();
   load();
 }
 
@@ -291,14 +413,10 @@ async function load(){
   if(!mon) return;
   document.getElementById('content').innerHTML='<div class="ld">Loading...</div>';
   var today=new Date().toISOString().split('T')[0];
-  var thisMon=getMonday(today);
-  var nextMon=addDays(thisMon,7);
-  var isCurrentOrNext=(mon===thisMon||mon===nextMon);
   var sun=addDays(mon,6);
   var lmon=addDays(mon,-7);
   var lsun=addDays(sun,-7);
   currentWeek={mon,sun,lmon,lsun};
-  document.getElementById('meta').textContent='w/c '+fmt(mon)+' \u2013 '+fmt(sun);
 
   var orders=await get('/jb_orders?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
@@ -315,15 +433,7 @@ async function load(){
   lsales.forEach(function(r){if(!lsM[r.sku])lsM[r.sku]={};lsM[r.sku][r.date]=+r.qty;});
   recs.forEach(function(r){
     if(!rM[r.sku])rM[r.sku]={};
-    rM[r.sku][r.dow]={
-      rec:+r.rec_edify,
-      rule:r.rec_rule,
-      avg:+r.avg_sold_4w,
-      avgOrd:+r.avg_ordered_4w,
-      waste:+r.avg_waste_4w,
-      wpct:+r.waste_rate_pct,
-      soldOut:r.sold_out_lw===true||r.sold_out_lw==='true'
-    };
+    rM[r.sku][r.dow]={rec:+r.rec_edify,rule:r.rec_rule,avg:+r.avg_sold_4w,avgOrd:+r.avg_ordered_4w,waste:+r.avg_waste_4w,wpct:+r.waste_rate_pct,soldOut:r.sold_out_lw===true||r.sold_out_lw==='true'};
   });
 
   var allSkus=Object.keys(Object.assign({},oM,rM,loM));
@@ -333,8 +443,8 @@ async function load(){
   if(!allSkus.length){document.getElementById('content').innerHTML='<div class="ld">No data</div>';return;}
 
   function ruleBadge(rule){
-    if(rule==='sold_out') return '<span class="badge b-so">+10% sold out</span>';
-    if(rule==='waste') return '<span class="badge b-wt">-10% waste</span>';
+    if(rule==='sold_out') return '<span class="badge b-so">+10%</span>';
+    if(rule==='waste') return '<span class="badge b-wt">-10%</span>';
     return '<span class="badge b-hd">hold</span>';
   }
 
@@ -352,7 +462,6 @@ async function load(){
         sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>4w Sold</th><th>4w Ordered</th><th>4w Waste</th><th>Rule</th><th>Rec</th>';
       }
     });
-
     var rows=skus.map(function(sku){
       var cells='';
       DAYS.forEach(function(day,i){
@@ -360,7 +469,7 @@ async function load(){
         var ldate=addDays(lmon,i);
         var hasOrders=Object.keys(oM).some(function(s){return oM[s]&&oM[s][date]!==undefined;});
         var past=date<today&&hasOrders;
-        var info=(rM[sku]&&rM[sku][day])||{rec:0,rule:'hold',avg:0,avgOrd:0,waste:0,wpct:0,soldOut:false};
+        var info=(rM[sku]&&rM[sku][day])||{rec:0,rule:'hold',avg:0,avgOrd:0,waste:0,wpct:0};
         var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
         var lws=(lsM[sku]&&lsM[sku][ldate]!==undefined)?lsM[sku][ldate]:'-';
         if(past){
