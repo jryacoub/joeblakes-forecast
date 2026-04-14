@@ -15,12 +15,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tab:hover{opacity:0.9}
 .tab.active{opacity:1;border-bottom:2px solid #C9A84C}
 .wrap{max-width:1400px;margin:0 auto;padding:20px 16px}
-.controls{display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.controls{display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap}
 .controls label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
 .controls select{font-size:13px;padding:6px 10px;border-radius:6px;border:0.5px solid #ccc;background:#fff;font-family:inherit;cursor:pointer}
-.legend{display:flex;gap:16px;margin-left:auto;align-items:center;font-size:11px;color:#888}
-.legend span{display:flex;align-items:center;gap:4px}
-.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.rules-bar{background:#fff;border:0.5px solid #e0ddd5;border-radius:8px;padding:11px 16px;margin-bottom:20px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;font-size:11px;color:#666}
+.rules-bar strong{color:#3D4A35;font-weight:600;margin-right:8px}
+.rtag{display:inline-flex;align-items:center;gap:5px}
+.rdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .section{margin-bottom:32px}
 .section-title{font-size:11px;font-weight:600;color:#EDE0CC;background:#3D4A35;padding:7px 14px;border-radius:6px 6px 0 0;text-transform:uppercase;letter-spacing:0.1em;display:flex;justify-content:space-between;align-items:center}
 .section-title small{font-weight:400;opacity:0.7;font-size:10px}
@@ -36,12 +37,16 @@ tr:hover td{background:#faf9f6}
 .pos{color:#3a6910;font-weight:600}
 .neg{color:#a02c2c;font-weight:600}
 .lw{color:#aaa;font-size:11px}
-.pr{color:#bbb;font-size:11px}
+.rec-val{font-size:15px;font-weight:700;color:#1a1a1a}
 .stepper{display:flex;align-items:center;border:0.5px solid #c8c4bc;border-radius:5px;overflow:hidden;width:90px;margin:0 auto}
 .stepper button{background:#f5f3ef;border:none;width:24px;height:28px;font-size:14px;cursor:pointer;color:#3D4A35;font-weight:600;flex-shrink:0}
 .stepper button:hover{background:#e8e4dc}
 .stepper input{border:none;width:42px;height:28px;text-align:center;font-size:13px;font-weight:600;color:#1a1a1a;font-family:inherit;background:#fff;-moz-appearance:textfield}
 .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none}
+.badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600}
+.b-so{background:#e8f3dc;color:#3a6910}
+.b-wt{background:#fce8e8;color:#a02c2c}
+.b-hd{background:#f0ede5;color:#888}
 .ld{text-align:center;padding:3rem;color:#888}
 .card{background:#fff;border:0.5px solid #e0ddd5;border-radius:8px;padding:24px;margin-bottom:24px;max-width:800px}
 .card h2{font-size:13px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
@@ -120,11 +125,13 @@ input[type=file]{display:none}
   <div class="controls">
     <label>Week</label>
     <select id="week-pick" onchange="load()"></select>
-    <div class="legend">
-      <span><span class="dot" style="background:#3a6910"></span>Sold out last week (+15%)</span>
-      <span><span class="dot" style="background:#a02c2c"></span>Waste &gt;10% (−10%)</span>
-      <span><span class="dot" style="background:#888"></span>Hold</span>
-    </div>
+  </div>
+  <div class="rules-bar">
+    <strong>Rec Rules:</strong>
+    <span class="rtag"><span class="rdot" style="background:#3a6910"></span>Sold out last week → +15% on 4w avg ordered</span>
+    <span class="rtag"><span class="rdot" style="background:#a02c2c"></span>Waste ≥ 10% of 4w avg ordered → −10%</span>
+    <span class="rtag"><span class="rdot" style="background:#888"></span>All other → hold at 4w avg ordered</span>
+    <span style="color:#aaa;margin-left:auto;font-size:10px">Rule 1 takes priority. Rec is non-adjustable — use as your order guide.</span>
   </div>
   <div id="content" class="ld">Loading...</div>
 </div>
@@ -133,7 +140,7 @@ input[type=file]{display:none}
 <div id="pane-chat" style="display:none">
 <div class="wrap">
   <div class="chat-wrap">
-    <div class="chat-context"><strong>Context:</strong> AI has access to 4w and prior 4w sales, orders, waste and recs.</div>
+    <div class="chat-context"><strong>Context:</strong> AI has access to 4w sales, 4w orders, 4w waste, sell-out flags and recs.</div>
     <div class="full-suggestions">
       <div class="full-sug" onclick="askFull(this)">Which SKUs had high waste?</div>
       <div class="full-sug" onclick="askFull(this)">Did anything sell out last week?</div>
@@ -262,7 +269,7 @@ function init(){
   var today=new Date().toISOString().split('T')[0];
   var mon=getMonday(today);
   var sel=document.getElementById('week-pick');
-  var weeks=[addDays(mon,14),addDays(mon,7),mon];
+  var weeks=[addDays(mon,7),mon];
   for(var i=1;i<=12;i++) weeks.push(addDays(mon,i*-7));
   weeks.forEach(function(w){
     var o=document.createElement('option');
@@ -272,7 +279,7 @@ function init(){
     else if(w===addDays(mon,-7)) lbl='Last week: '+lbl;
     else if(w===addDays(mon,7)) lbl='Next week: '+lbl;
     o.textContent=lbl;
-    if(w===addDays(mon,-7)) o.selected=true;
+    if(w===mon) o.selected=true;
     sel.appendChild(o);
   });
   load();
@@ -283,6 +290,9 @@ async function load(){
   if(!mon) return;
   document.getElementById('content').innerHTML='<div class="ld">Loading...</div>';
   var today=new Date().toISOString().split('T')[0];
+  var thisMon=getMonday(today);
+  var nextMon=addDays(thisMon,7);
+  var isCurrentOrNext=(mon===thisMon||mon===nextMon);
   var sun=addDays(mon,6);
   var lmon=addDays(mon,-7);
   var lsun=addDays(sun,-7);
@@ -293,7 +303,7 @@ async function load(){
   var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var lorders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
   var lsales=await get('/jb_sales?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
-  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold_4w,avg_sold_prior4,avg_ordered_4w,avg_ordered_prior4,avg_waste_4w,avg_waste_prior4,waste_rate_pct,sold_out_lw&limit=1000');
+  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,rec_rule,avg_sold_4w,avg_ordered_4w,avg_waste_4w,waste_rate_pct,sold_out_lw&limit=1000');
 
   var oM={},sM={},loM={},lsM={},rM={};
   orders.forEach(function(r){if(!oM[r.sku])oM[r.sku]={};oM[r.sku][r.date]=+r.qty;});
@@ -304,12 +314,10 @@ async function load(){
     if(!rM[r.sku])rM[r.sku]={};
     rM[r.sku][r.dow]={
       rec:+r.rec_edify,
+      rule:r.rec_rule,
       avg:+r.avg_sold_4w,
-      avgP:+r.avg_sold_prior4,
       avgOrd:+r.avg_ordered_4w,
-      avgOrdP:+r.avg_ordered_prior4,
       waste:+r.avg_waste_4w,
-      wasteP:+r.avg_waste_prior4,
       wpct:+r.waste_rate_pct,
       soldOut:r.sold_out_lw===true||r.sold_out_lw==='true'
     };
@@ -321,6 +329,12 @@ async function load(){
   var pSkus=sortByAvg(allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}));
   if(!allSkus.length){document.getElementById('content').innerHTML='<div class="ld">No data</div>';return;}
 
+  function ruleBadge(rule){
+    if(rule==='sold_out') return '<span class="badge b-so">+15% sold out</span>';
+    if(rule==='waste') return '<span class="badge b-wt">-10% waste</span>';
+    return '<span class="badge b-hd">hold</span>';
+  }
+
   function buildSection(title,sub,skus){
     if(!skus.length) return '';
     var dh='';var sh='';
@@ -328,11 +342,14 @@ async function load(){
       var date=addDays(mon,i);
       var hasOrders=Object.keys(oM).some(function(s){return oM[s]&&oM[s][date]!==undefined;});
       var past=date<today&&hasOrders;
-      dh+='<th colspan="'+(past?6:9)+'" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
+      var fcols=isCurrentOrNext?7:6;
+      dh+='<th colspan="'+(past?6:fcols)+'" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
       if(past){
         sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Ord</th><th>Sold</th><th>Waste</th><th>&Delta; Rec</th>';
+      } else if(isCurrentOrNext){
+        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>4w Sold</th><th>4w Ordered</th><th>4w Waste</th><th>Rule</th><th>Rec</th>';
       } else {
-        sh+='<th style="border-left:2px solid #c8c4bc">4w Sold</th><th>Prior Sold</th><th>4w Ord</th><th>Prior Ord</th><th>4w Waste</th><th>Prior Waste</th><th>Waste %</th><th>Rule</th><th>Rec</th>';
+        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>4w Sold</th><th>4w Ordered</th><th>4w Waste</th><th>Rec</th>';
       }
     });
 
@@ -343,7 +360,7 @@ async function load(){
         var ldate=addDays(lmon,i);
         var hasOrders=Object.keys(oM).some(function(s){return oM[s]&&oM[s][date]!==undefined;});
         var past=date<today&&hasOrders;
-        var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,avgP:0,avgOrd:0,avgOrdP:0,waste:0,wasteP:0,wpct:0,soldOut:false};
+        var info=(rM[sku]&&rM[sku][day])||{rec:0,rule:'hold',avg:0,avgOrd:0,waste:0,wpct:0,soldOut:false};
         var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
         var lws=(lsM[sku]&&lsM[sku][ldate]!==undefined)?lsM[sku][ldate]:'-';
         if(past){
@@ -354,9 +371,10 @@ async function load(){
           var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
           var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
           cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+lww+'</td><td'+dc+'>'+ds+'</td>';
+        } else if(isCurrentOrNext){
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+n(info.avg)+'</td><td>'+n(info.avgOrd)+'</td><td>'+n(info.waste)+'</td><td>'+ruleBadge(info.rule)+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td>';
         } else {
-          var rule=info.soldOut?'<span style="font-size:9px;color:#3a6910;font-weight:600">+15%</span>':info.wpct>=10?'<span style="font-size:9px;color:#a02c2c;font-weight:600">-10%</span>':'<span style="font-size:9px;color:#888">hold</span>';
-          cells+='<td style="border-left:2px solid #eee">'+n(info.avg)+'</td><td class="pr">'+n(info.avgP)+'</td><td>'+n(info.avgOrd)+'</td><td class="pr">'+n(info.avgOrdP)+'</td><td>'+n(info.waste)+'</td><td class="pr">'+n(info.wasteP)+'</td><td style="font-size:11px;color:#888">'+(info.wpct>0?info.wpct.toFixed(0)+'%':'0%')+'</td><td>'+rule+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td>';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+n(info.avg)+'</td><td>'+n(info.avgOrd)+'</td><td>'+n(info.waste)+'</td><td><span class="rec-val">'+info.rec+'</span></td>';
         }
       });
       return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
