@@ -128,10 +128,10 @@ input[type=file]{display:none}
   </div>
   <div class="rules-bar">
     <strong>Rec Rules:</strong>
-    <span class="rtag"><span class="rdot" style="background:#3a6910"></span>Sold out last week → +15% on 4w avg ordered</span>
+    <span class="rtag"><span class="rdot" style="background:#3a6910"></span>Sold out last week → +10% on 4w avg ordered</span>
     <span class="rtag"><span class="rdot" style="background:#a02c2c"></span>Waste ≥ 10% of 4w avg ordered → −10%</span>
     <span class="rtag"><span class="rdot" style="background:#888"></span>All other → hold at 4w avg ordered</span>
-    <span style="color:#aaa;margin-left:auto;font-size:10px">Rule 1 takes priority. Rec is non-adjustable — use as your order guide.</span>
+    <span style="color:#aaa;margin-left:auto;font-size:10px">Rule 1 takes priority. Waste = Edify recorded only.</span>
   </div>
   <div id="content" class="ld">Loading...</div>
 </div>
@@ -261,9 +261,15 @@ function fmt(d){return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'
 function avgForSku(sku,rM){
   if(!rM[sku]) return 0;
   var vals=Object.values(rM[sku]);
-  return vals.reduce(function(s,v){return s+v.avg;},0)/vals.length;
+  return vals.reduce(function(s,v){return s+v.avgOrd;},0)/vals.length;
 }
-function n(v){return v&&+v>0?(+v).toFixed(1):'-';}
+// Show actual value including 0, only dash for null/undefined/missing
+function nv(v){
+  if(v===null||v===undefined) return '-';
+  var f=parseFloat(v);
+  if(isNaN(f)) return '-';
+  return f===0?'0':f.toFixed(1);
+}
 
 function init(){
   var today=new Date().toISOString().split('T')[0];
@@ -301,13 +307,15 @@ async function load(){
 
   var orders=await get('/jb_orders?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
+  var waste=await get('/jb_waste?select=sku,qty_edify,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var lorders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
   var lsales=await get('/jb_sales?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
   var recs=await get('/jb_forecast?select=sku,dow,rec_edify,rec_rule,avg_sold_4w,avg_ordered_4w,avg_waste_4w,waste_rate_pct,sold_out_lw&limit=1000');
 
-  var oM={},sM={},loM={},lsM={},rM={};
+  var oM={},sM={},wM={},loM={},lsM={},rM={};
   orders.forEach(function(r){if(!oM[r.sku])oM[r.sku]={};oM[r.sku][r.date]=+r.qty;});
   sales.forEach(function(r){if(!sM[r.sku])sM[r.sku]={};sM[r.sku][r.date]=+r.qty;});
+  waste.forEach(function(r){if(!wM[r.sku])wM[r.sku]={};wM[r.sku][r.date]=+r.qty_edify;});
   lorders.forEach(function(r){if(!loM[r.sku])loM[r.sku]={};loM[r.sku][r.date]=+r.qty;});
   lsales.forEach(function(r){if(!lsM[r.sku])lsM[r.sku]={};lsM[r.sku][r.date]=+r.qty;});
   recs.forEach(function(r){
@@ -330,7 +338,7 @@ async function load(){
   if(!allSkus.length){document.getElementById('content').innerHTML='<div class="ld">No data</div>';return;}
 
   function ruleBadge(rule){
-    if(rule==='sold_out') return '<span class="badge b-so">+15% sold out</span>';
+    if(rule==='sold_out') return '<span class="badge b-so">+10% sold out</span>';
     if(rule==='waste') return '<span class="badge b-wt">-10% waste</span>';
     return '<span class="badge b-hd">hold</span>';
   }
@@ -366,15 +374,15 @@ async function load(){
         if(past){
           var ord=(oM[sku]&&oM[sku][date]!==undefined)?oM[sku][date]:'-';
           var sol=(sM[sku]&&sM[sku][date]!==undefined)?sM[sku][date]:'-';
-          var lww=(lwo!=='-'&&lws!=='-')?(lwo-lws):'-';
+          var wst=(wM[sku]&&wM[sku][date]!==undefined)?wM[sku][date]:'-';
           var delta=(info.rec&&ord!=='-')?(ord-info.rec):null;
           var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
           var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
-          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+lww+'</td><td'+dc+'>'+ds+'</td>';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+wst+'</td><td'+dc+'>'+ds+'</td>';
         } else if(isCurrentOrNext){
-          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+n(info.avg)+'</td><td>'+n(info.avgOrd)+'</td><td>'+n(info.waste)+'</td><td>'+ruleBadge(info.rule)+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td>';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+nv(info.avg)+'</td><td>'+nv(info.avgOrd)+'</td><td>'+nv(info.waste)+'</td><td>'+ruleBadge(info.rule)+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td>';
         } else {
-          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+n(info.avg)+'</td><td>'+n(info.avgOrd)+'</td><td>'+n(info.waste)+'</td><td><span class="rec-val">'+info.rec+'</span></td>';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+nv(info.avg)+'</td><td>'+nv(info.avgOrd)+'</td><td>'+nv(info.waste)+'</td><td><span class="rec-val">'+info.rec+'</span></td>';
         }
       });
       return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
