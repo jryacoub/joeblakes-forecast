@@ -43,7 +43,6 @@ tr:hover td{background:#faf9f6}
 .b-wt{background:#fce8e8;color:#a02c2c}
 .b-hd{background:#f0ede5;color:#888}
 .ld{text-align:center;padding:3rem;color:#888}
-/* Order tab */
 .order-controls{display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap}
 .order-controls label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
 .order-controls select{font-size:13px;padding:6px 10px;border-radius:6px;border:0.5px solid #ccc;background:#fff;font-family:inherit;cursor:pointer}
@@ -64,7 +63,6 @@ tr:hover td{background:#faf9f6}
 .waste-hi{color:#a02c2c;font-weight:600}
 .lw-num{font-size:12px;color:#aaa}
 .day-sep{border-left:2px solid #e0ddd5!important}
-/* cards */
 .card{background:#fff;border:0.5px solid #e0ddd5;border-radius:8px;padding:24px;margin-bottom:24px;max-width:800px}
 .card h2{font-size:13px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
 .card .sub{font-size:11px;color:#888;margin-bottom:20px}
@@ -138,7 +136,6 @@ input[type=file]{display:none}
   <div class="tab" id="tab-import" onclick="showTab('import')">Import Data</div>
 </div>
 
-<!-- ORDER TAB -->
 <div id="pane-order">
 <div class="wrap">
   <div class="order-controls">
@@ -151,7 +148,6 @@ input[type=file]{display:none}
 </div>
 </div>
 
-<!-- ANALYSIS TAB -->
 <div id="pane-dashboard" style="display:none">
 <div class="wrap">
   <div class="controls">
@@ -169,7 +165,6 @@ input[type=file]{display:none}
 </div>
 </div>
 
-<!-- CHAT TAB -->
 <div id="pane-chat" style="display:none">
 <div class="wrap">
   <div class="chat-wrap">
@@ -189,7 +184,6 @@ input[type=file]{display:none}
 </div>
 </div>
 
-<!-- IMPORT TAB -->
 <div id="pane-import" style="display:none">
 <div class="wrap">
   <div class="card">
@@ -270,7 +264,7 @@ var DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'
 var WDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var DOUGHNUTS=['Nutella','Pistachio','Kinder Bueno','Red Velvet','Vegan Jam','Glazed','Custard','Vegan Lotus','Pink Sprinkle','Chocolate Sprinkle','Tiramisu','Cinnamon Sugar','Honeycomb','Lemon','Jaffa Cake'];
 var PASTRIES=['Almond Croissant','Plain Croissant','Plain Nata','Pain Au Chocolat','Pain Aux Raisin','Raspberry Nata','Cinnamon Bun'];
-var SKU_MAP={'glazed chocolate':'Chocolate Sprinkle','chocolate glazed':'Chocolate Sprinkle','choc glazed':'Chocolate Sprinkle','choc sprinkle':'Chocolate Sprinkle','chocolate sprinkle doughnut':'Chocolate Sprinkle','nutella':'Nutella','pistachio':'Pistachio','kinder bueno':'Kinder Bueno','red velvet':'Red Velvet','vegan jam':'Vegan Jam','glazed':'Glazed','custard':'Custard','vegan lotus':'Vegan Lotus','pink sprinkle':'Pink Sprinkle','chocolate sprinkle':'Chocolate Sprinkle','tiramisu':'Tiramisu','cinnamon sugar':'Cinnamon Sugar','honeycomb':'Honeycomb','lemon':'Lemon','jaffa cake':'Jaffa Cake','almond croissant':'Almond Croissant','plain croissant':'Plain Croissant','plain nata':'Plain Nata','pain au chocolat':'Pain Au Chocolat','pain aux raisin':'Pain Aux Raisin','raspberry nata':'Raspberry Nata','cinnamon bun':'Cinnamon Bun'};
+var SKU_MAP={'glazed chocolate':'Chocolate Sprinkle','chocolate glazed':'Chocolate Sprinkle','choc glazed':'Chocolate Sprinkle','choc sprinkle':'Chocolate Sprinkle','chocolate sprinkle doughnut':'Chocolate Sprinkle','glazed doughnut':'Glazed','double chocolate':'Chocolate Sprinkle','nutella':'Nutella','pistachio':'Pistachio','kinder bueno':'Kinder Bueno','red velvet':'Red Velvet','vegan jam':'Vegan Jam','glazed':'Glazed','custard':'Custard','vegan lotus':'Vegan Lotus','pink sprinkle':'Pink Sprinkle','chocolate sprinkle':'Chocolate Sprinkle','tiramisu':'Tiramisu','cinnamon sugar':'Cinnamon Sugar','honeycomb':'Honeycomb','lemon':'Lemon','jaffa cake':'Jaffa Cake','almond croissant':'Almond Croissant','plain croissant':'Plain Croissant','plain nata':'Plain Nata','pain au chocolat':'Pain Au Chocolat','pain aux raisin':'Pain Aux Raisin','raspberry nata':'Raspberry Nata','cinnamon bun':'Cinnamon Bun'};
 var uploadState={sales:{rows:[],headers:[]},orders:{rows:[],headers:[]}};
 var popupHistory=[];
 var fullHistory=[];
@@ -287,28 +281,17 @@ function togglePopup(){
   p.classList.toggle('open');
   if(p.classList.contains('open')) document.getElementById('popup-input').focus();
 }
-
 async function get(p){try{var r=await fetch(BASE+p,{headers:H});return await r.json();}catch(e){return[];}}
 function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
 function addDays(d,n){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
 function fmt(d){return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
-function avgForSku(sku,rM){
-  if(!rM[sku]) return 0;
-  var vals=Object.values(rM[sku]);
-  return vals.reduce(function(s,v){return s+v.avgOrd;},0)/vals.length;
-}
-function nv(v){
-  if(v===null||v===undefined) return '-';
-  var f=parseFloat(v);
-  if(isNaN(f)) return '-';
-  if(f===0) return '0';
-  return f.toFixed(1);
-}
+function avgForSku(sku,rM){if(!rM[sku])return 0;var vals=Object.values(rM[sku]);return vals.reduce(function(s,v){return s+v.avgOrd;},0)/vals.length;}
+function nv(v){if(v===null||v===undefined)return'-';var f=parseFloat(v);if(isNaN(f))return'-';if(f===0)return'0';return f.toFixed(1);}
 
 function initWeekPickers(){
   var today=new Date().toISOString().split('T')[0];
   var mon=getMonday(today);
-  [document.getElementById('order-week-pick'), document.getElementById('week-pick')].forEach(function(sel){
+  [document.getElementById('order-week-pick'),document.getElementById('week-pick')].forEach(function(sel){
     sel.innerHTML='';
     var weeks=[addDays(mon,7),mon];
     for(var i=1;i<=12;i++) weeks.push(addDays(mon,i*-7));
@@ -327,10 +310,9 @@ function initWeekPickers(){
   document.getElementById('meta').textContent='w/c '+fmt(mon)+' \u2013 '+fmt(addDays(mon,6));
 }
 
-// ── COPY TO CLIPBOARD ──────────────────────────────────────
 function copyOrderTable(){
   var tables=document.querySelectorAll('#order-content .otable');
-  var text='JOE BLAKE\'S — WEST ONE — ORDER GUIDE\n'+document.getElementById('order-sub').textContent+'\n\n';
+  var text='JOE BLAKE\'S \u2014 WEST ONE \u2014 ORDER GUIDE\n'+document.getElementById('order-sub').textContent+'\n\n';
   tables.forEach(function(tbl){
     var section=tbl.closest('.section');
     var title=section?section.querySelector('.section-title'):null;
@@ -346,13 +328,12 @@ function copyOrderTable(){
   });
   navigator.clipboard.writeText(text).then(function(){
     var btn=document.getElementById('copy-btn');
-    btn.textContent='✓ Copied!';
+    btn.textContent='\u2713 Copied!';
     btn.classList.add('copied');
-    setTimeout(function(){btn.textContent='📋 Copy to Clipboard';btn.classList.remove('copied');},2000);
+    setTimeout(function(){btn.textContent='\uD83D\uDCCB Copy to Clipboard';btn.classList.remove('copied');},2000);
   });
 }
 
-// ── ORDER TAB ──────────────────────────────────────────────
 async function loadOrder(){
   var mon=document.getElementById('order-week-pick').value;
   if(!mon) return;
@@ -360,8 +341,7 @@ async function loadOrder(){
   var sun=addDays(mon,6);
   var lmon=addDays(mon,-7);
   var lsun=addDays(sun,-7);
-  document.getElementById('order-sub').textContent=
-    'w/c '+fmt(mon)+' \u2013 '+fmt(sun)+' \u00b7 Last week: '+fmt(lmon)+' \u2013 '+fmt(lsun);
+  document.getElementById('order-sub').textContent='w/c '+fmt(mon)+' \u2013 '+fmt(sun)+' \u00b7 Last week: '+fmt(lmon)+' \u2013 '+fmt(lsun);
 
   var recs=await get('/jb_forecast?select=sku,dow,rec_edify,rec_rule&limit=1000');
   var lorders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
@@ -375,13 +355,7 @@ async function loadOrder(){
   lwaste.forEach(function(r){if(!lwM[r.sku])lwM[r.sku]={};lwM[r.sku][r.date]=+r.qty_edify;});
 
   var allSkus=Object.keys(rM);
-  function sortByRec(skus){
-    return skus.sort(function(a,b){
-      var ar=Object.values(rM[a]||{}).reduce(function(s,v){return s+v.rec;},0);
-      var br=Object.values(rM[b]||{}).reduce(function(s,v){return s+v.rec;},0);
-      return br-ar;
-    });
-  }
+  function sortByRec(skus){return skus.sort(function(a,b){var ar=Object.values(rM[a]||{}).reduce(function(s,v){return s+v.rec;},0);var br=Object.values(rM[b]||{}).reduce(function(s,v){return s+v.rec;},0);return br-ar;});}
   var dSkus=sortByRec(allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}));
   var pSkus=sortByRec(allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}));
 
@@ -390,9 +364,8 @@ async function loadOrder(){
     var dh='<th class="sku-head" rowspan="2">SKU</th>';
     var sh='';
     DAYS.forEach(function(day,i){
-      var date=addDays(mon,i);
       var ldate=addDays(lmon,i);
-      dh+='<th colspan="3" class="day-head">'+day.slice(0,3)+' '+fmt(date)+'</th>';
+      dh+='<th colspan="3" class="day-head">'+day.slice(0,3)+' '+fmt(addDays(mon,i))+'</th>';
       sh+='<th class="day-sep" style="background:#faf9f6;color:#aaa;font-size:9px">LW ORD</th>';
       sh+='<th style="background:#faf9f6;color:#aaa;font-size:9px">LW WASTE</th>';
       sh+='<th style="background:#faf5e8;color:#3D4A35;font-weight:700;font-size:9px">REC</th>';
@@ -421,7 +394,6 @@ async function loadOrder(){
   document.getElementById('order-content').innerHTML=html||'<div class="ld">No data</div>';
 }
 
-// ── ANALYSIS TAB ───────────────────────────────────────────
 async function load(){
   var mon=document.getElementById('week-pick').value;
   if(!mon) return;
@@ -445,10 +417,7 @@ async function load(){
   waste.forEach(function(r){if(!wM[r.sku])wM[r.sku]={};wM[r.sku][r.date]=+r.qty_edify;});
   lorders.forEach(function(r){if(!loM[r.sku])loM[r.sku]={};loM[r.sku][r.date]=+r.qty;});
   lsales.forEach(function(r){if(!lsM[r.sku])lsM[r.sku]={};lsM[r.sku][r.date]=+r.qty;});
-  recs.forEach(function(r){
-    if(!rM[r.sku])rM[r.sku]={};
-    rM[r.sku][r.dow]={rec:+r.rec_edify,rule:r.rec_rule,avg:+r.avg_sold_4w,avgOrd:+r.avg_ordered_4w,waste:+r.avg_waste_4w,wpct:+r.waste_rate_pct,soldOut:r.sold_out_lw===true||r.sold_out_lw==='true'};
-  });
+  recs.forEach(function(r){if(!rM[r.sku])rM[r.sku]={};rM[r.sku][r.dow]={rec:+r.rec_edify,rule:r.rec_rule,avg:+r.avg_sold_4w,avgOrd:+r.avg_ordered_4w,waste:+r.avg_waste_4w,wpct:+r.waste_rate_pct,soldOut:r.sold_out_lw===true||r.sold_out_lw==='true'};});
 
   var allSkus=Object.keys(Object.assign({},oM,rM,loM));
   function sortByAvg(skus){return skus.sort(function(a,b){return avgForSku(b,rM)-avgForSku(a,rM);});}
@@ -527,7 +496,7 @@ function addMsg(containerId,role,text){
 function askPopup(el){document.getElementById('popup-input').value=el.textContent;sendPopup();}
 async function sendPopup(){
   var inp=document.getElementById('popup-input');
-  var text=inp.value.trim();if(!text) return;
+  var text=inp.value.trim();if(!text)return;
   inp.value='';
   addMsg('popup-messages','user',text);
   var thinking=addMsg('popup-messages','assistant','Thinking...');
@@ -539,7 +508,7 @@ async function sendPopup(){
 function askFull(el){document.getElementById('full-input').value=el.textContent;sendFull();}
 async function sendFull(){
   var inp=document.getElementById('full-input');
-  var text=inp.value.trim();if(!text) return;
+  var text=inp.value.trim();if(!text)return;
   inp.value='';
   addMsg('full-messages','user',text);
   var thinking=addMsg('full-messages','assistant','Thinking...');
@@ -551,20 +520,20 @@ async function sendFull(){
 
 function normSku(raw){var k=(raw||'').toLowerCase().trim().replace(/\s+/g,' ');return SKU_MAP[k]||raw;}
 function parseDate(raw){
-  if(!raw) return null;
+  if(!raw)return null;
   var d=new Date(raw);
-  if(!isNaN(d)) return d.toISOString().split('T')[0];
+  if(!isNaN(d))return d.toISOString().split('T')[0];
   var m=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if(m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
   return null;
 }
 function parseCSV(text){
   var lines=text.trim().split('\n');
-  var headers=lines[0].split(',').map(function(h){return h.replace(/"/g,'').trim();});
+  var headers=lines[0].split(',').map(function(h){return h.replace(/"/g,'').replace(/^\uFEFF/,'').trim();});
   var rows=lines.slice(1).map(function(line){
     var cols=[];var cur='';var inq=false;
     for(var i=0;i<line.length;i++){
-      if(line[i]==='"') inq=!inq;
+      if(line[i]==='"')inq=!inq;
       else if(line[i]===','&&!inq){cols.push(cur.trim());cur='';}
       else cur+=line[i];
     }
@@ -579,8 +548,8 @@ function setupDrop(type){
   var input=document.getElementById(type+'-file');
   drop.addEventListener('dragover',function(e){e.preventDefault();drop.classList.add('over');});
   drop.addEventListener('dragleave',function(){drop.classList.remove('over');});
-  drop.addEventListener('drop',function(e){e.preventDefault();drop.classList.remove('over');var f=e.dataTransfer.files[0];if(f) handleFile(type,f);});
-  input.addEventListener('change',function(){if(this.files[0]) handleFile(type,this.files[0]);});
+  drop.addEventListener('drop',function(e){e.preventDefault();drop.classList.remove('over');var f=e.dataTransfer.files[0];if(f)handleFile(type,f);});
+  input.addEventListener('change',function(){if(this.files[0])handleFile(type,this.files[0]);});
 }
 function handleFile(type,file){
   var reader=new FileReader();
@@ -595,9 +564,9 @@ function handleFile(type,file){
         var opt=document.createElement('option');
         opt.value=h;opt.textContent=h;
         var hl=h.toLowerCase();
-        if(field==='date'&&(hl.includes('date')||hl.includes('day'))) opt.selected=true;
-        if(field==='sku'&&(hl.includes('item')||hl.includes('sku')||hl.includes('product')||hl.includes('name'))) opt.selected=true;
-        if(field==='qty'&&(hl.includes('qty')||hl.includes('unit')||hl.includes('quant')||hl.includes('sold'))) opt.selected=true;
+        if(field==='date'&&(hl.includes('date')||hl.includes('day')))opt.selected=true;
+        if(field==='sku'&&(hl.includes('item')||hl.includes('sku')||hl.includes('product')||hl.includes('name')))opt.selected=true;
+        if(field==='qty'&&(hl.includes('qty')||hl.includes('unit')||hl.includes('quant')||hl.includes('sold')))opt.selected=true;
         sel.appendChild(opt);
       });
     });
@@ -638,13 +607,13 @@ async function uploadData(type){
     var date=parseDate(r[dateCol]);
     var sku=normSku(r[skuCol]);
     var qty=parseFloat(r[qtyCol]);
-    if(!date||!sku||isNaN(qty)||qty<0) return;
+    if(!date||!sku||isNaN(qty)||qty<0)return;
     var dow=WDAYS[new Date(date+'T12:00:00').getDay()];
     payload.push({date,sku,dow,qty});
   });
   if(!payload.length){setStatus(type,'error','No valid rows found. Check column mapping.');btn.disabled=false;return;}
   var batches=[];
-  for(var i=0;i<payload.length;i+=100) batches.push(payload.slice(i,i+100));
+  for(var i=0;i<payload.length;i+=100)batches.push(payload.slice(i,i+100));
   var done=0;
   setStatus(type,'info','Uploading '+payload.length+' rows...');
   for(var b=0;b<batches.length;b++){
@@ -655,7 +624,7 @@ async function uploadData(type){
       document.getElementById(type+'-progress').textContent=done+' / '+payload.length+' rows uploaded...';
     }catch(e){setStatus(type,'error','Network error: '+e.message);btn.disabled=false;return;}
   }
-  setStatus(type,'success','Done! '+payload.length+' rows uploaded. Dashboard will reflect updated data immediately.');
+  setStatus(type,'success','Done! '+payload.length+' rows uploaded.');
   document.getElementById(type+'-progress').textContent='';
   btn.disabled=false;
 }
