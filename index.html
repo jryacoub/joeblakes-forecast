@@ -44,26 +44,26 @@ tr:hover td{background:#faf9f6}
 .b-hd{background:#f0ede5;color:#888}
 .ld{text-align:center;padding:3rem;color:#888}
 /* Order tab */
-.order-wrap{max-width:1200px;margin:0 auto}
-.order-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px}
-.order-header h2{font-size:13px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.08em}
-.order-header .sub{font-size:11px;color:#888}
+.order-controls{display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.order-controls label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em}
+.order-controls select{font-size:13px;padding:6px 10px;border-radius:6px;border:0.5px solid #ccc;background:#fff;font-family:inherit;cursor:pointer}
+.copy-btn{padding:7px 16px;background:#EDE0CC;color:#3D4A35;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:0.03em}
+.copy-btn:hover{background:#e0d0b5}
+.copy-btn.copied{background:#e8f3dc;color:#3a6910}
+.order-sub{font-size:11px;color:#888;margin-bottom:16px}
 .otable{width:100%;border-collapse:collapse;background:#fff;border:0.5px solid #e0ddd5;font-size:12px}
 .otable thead th{background:#f0ede5;padding:8px 12px;font-size:10px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;text-align:center;border-bottom:1px solid #ddd9d0}
 .otable thead th.day-head{border-left:2px solid #c8c4bc}
-.otable thead th.sku-head{text-align:left;min-width:150px}
+.otable thead th.sku-head{text-align:left;min-width:150px;background:#f5f3ef}
 .otable thead tr.sub-head th{background:#faf9f6;font-size:9px;color:#aaa;font-weight:500;padding:4px 12px;border-bottom:1px solid #e0ddd5}
 .otable tbody td{padding:8px 12px;border-bottom:0.5px solid #f0ede5;text-align:center;vertical-align:middle}
 .otable tbody td.sku{text-align:left;font-weight:500;white-space:nowrap}
-.otable tbody td.sect{background:#f5f3ef;font-size:10px;font-weight:700;color:#3D4A35;text-transform:uppercase;letter-spacing:0.08em;text-align:left;padding:6px 12px;border-bottom:1px solid #e0ddd5}
 .otable tbody tr:last-child td{border-bottom:none}
 .otable tbody tr:hover td{background:#faf9f6}
-.otable tbody tr:hover td.sect{background:#f5f3ef}
 .rec-num{font-size:16px;font-weight:800;color:#1a1a1a}
-.waste-num{font-size:12px;color:#888}
 .waste-hi{color:#a02c2c;font-weight:600}
 .lw-num{font-size:12px;color:#aaa}
-.day-sep{border-left:2px solid #e0ddd5}
+.day-sep{border-left:2px solid #e0ddd5!important}
 /* cards */
 .card{background:#fff;border:0.5px solid #e0ddd5;border-radius:8px;padding:24px;margin-bottom:24px;max-width:800px}
 .card h2{font-size:13px;font-weight:600;color:#3D4A35;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
@@ -141,15 +141,13 @@ input[type=file]{display:none}
 <!-- ORDER TAB -->
 <div id="pane-order">
 <div class="wrap">
-  <div class="order-wrap">
-    <div class="order-header">
-      <div>
-        <h2>This Week's Order Guide</h2>
-        <div class="sub" id="order-sub">Loading...</div>
-      </div>
-    </div>
-    <div id="order-content" class="ld">Loading...</div>
+  <div class="order-controls">
+    <label>Week</label>
+    <select id="order-week-pick" onchange="loadOrder()"></select>
+    <button class="copy-btn" id="copy-btn" onclick="copyOrderTable()">📋 Copy to Clipboard</button>
   </div>
+  <div class="order-sub" id="order-sub"></div>
+  <div id="order-content" class="ld">Loading...</div>
 </div>
 </div>
 
@@ -307,10 +305,58 @@ function nv(v){
   return f.toFixed(1);
 }
 
-// ── ORDER TAB ──────────────────────────────────────────────
-async function loadOrder(){
+function initWeekPickers(){
   var today=new Date().toISOString().split('T')[0];
   var mon=getMonday(today);
+  [document.getElementById('order-week-pick'), document.getElementById('week-pick')].forEach(function(sel){
+    sel.innerHTML='';
+    var weeks=[addDays(mon,7),mon];
+    for(var i=1;i<=12;i++) weeks.push(addDays(mon,i*-7));
+    weeks.forEach(function(w){
+      var o=document.createElement('option');
+      o.value=w;
+      var lbl=fmt(w)+' \u2013 '+fmt(addDays(w,6));
+      if(w===mon) lbl='This week: '+lbl;
+      else if(w===addDays(mon,-7)) lbl='Last week: '+lbl;
+      else if(w===addDays(mon,7)) lbl='Next week: '+lbl;
+      o.textContent=lbl;
+      if(w===mon) o.selected=true;
+      sel.appendChild(o);
+    });
+  });
+  document.getElementById('meta').textContent='w/c '+fmt(mon)+' \u2013 '+fmt(addDays(mon,6));
+}
+
+// ── COPY TO CLIPBOARD ──────────────────────────────────────
+function copyOrderTable(){
+  var tables=document.querySelectorAll('#order-content .otable');
+  var text='JOE BLAKE\'S — WEST ONE — ORDER GUIDE\n'+document.getElementById('order-sub').textContent+'\n\n';
+  tables.forEach(function(tbl){
+    var section=tbl.closest('.section');
+    var title=section?section.querySelector('.section-title'):null;
+    if(title) text+=title.textContent.trim()+'\n';
+    var rows=tbl.querySelectorAll('tr');
+    rows.forEach(function(row){
+      var cells=row.querySelectorAll('th,td');
+      var line=[];
+      cells.forEach(function(c){line.push(c.textContent.trim().replace(/\s+/g,' '));});
+      text+=line.join('\t')+'\n';
+    });
+    text+='\n';
+  });
+  navigator.clipboard.writeText(text).then(function(){
+    var btn=document.getElementById('copy-btn');
+    btn.textContent='✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(function(){btn.textContent='📋 Copy to Clipboard';btn.classList.remove('copied');},2000);
+  });
+}
+
+// ── ORDER TAB ──────────────────────────────────────────────
+async function loadOrder(){
+  var mon=document.getElementById('order-week-pick').value;
+  if(!mon) return;
+  document.getElementById('order-content').innerHTML='<div class="ld">Loading...</div>';
   var sun=addDays(mon,6);
   var lmon=addDays(mon,-7);
   var lsun=addDays(sun,-7);
@@ -321,93 +367,61 @@ async function loadOrder(){
   var lorders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
   var lwaste=await get('/jb_waste?select=sku,qty_edify,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
 
-  // Build maps
-  var rM={};// rM[sku][dow] = {rec, rule}
-  recs.forEach(function(r){
-    if(!rM[r.sku])rM[r.sku]={};
-    rM[r.sku][r.dow]={rec:+r.rec_edify,rule:r.rec_rule};
-  });
-  var loM={};// loM[sku][date] = qty
+  var rM={};
+  recs.forEach(function(r){if(!rM[r.sku])rM[r.sku]={};rM[r.sku][r.dow]={rec:+r.rec_edify,rule:r.rec_rule};});
+  var loM={};
   lorders.forEach(function(r){if(!loM[r.sku])loM[r.sku]={};loM[r.sku][r.date]=+r.qty;});
-  var lwM={};// lwM[sku][date] = waste
+  var lwM={};
   lwaste.forEach(function(r){if(!lwM[r.sku])lwM[r.sku]={};lwM[r.sku][r.date]=+r.qty_edify;});
 
   var allSkus=Object.keys(rM);
-  function sortByAvgRec(skus){
+  function sortByRec(skus){
     return skus.sort(function(a,b){
       var ar=Object.values(rM[a]||{}).reduce(function(s,v){return s+v.rec;},0);
       var br=Object.values(rM[b]||{}).reduce(function(s,v){return s+v.rec;},0);
       return br-ar;
     });
   }
-  var dSkus=sortByAvgRec(allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}));
-  var pSkus=sortByAvgRec(allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}));
+  var dSkus=sortByRec(allSkus.filter(function(s){return DOUGHNUTS.indexOf(s)>-1;}));
+  var pSkus=sortByRec(allSkus.filter(function(s){return PASTRIES.indexOf(s)>-1;}));
 
   function buildOrderTable(skus){
     if(!skus.length) return '';
-    // Header
     var dh='<th class="sku-head" rowspan="2">SKU</th>';
     var sh='';
     DAYS.forEach(function(day,i){
       var date=addDays(mon,i);
       var ldate=addDays(lmon,i);
       dh+='<th colspan="3" class="day-head">'+day.slice(0,3)+' '+fmt(date)+'</th>';
-      sh+='<th class="day-sep">LW Ord</th><th>LW Waste</th><th style="background:#faf5e8;color:#3D4A35;font-weight:700">Rec</th>';
+      sh+='<th class="day-sep" style="background:#faf9f6;color:#aaa;font-size:9px">LW ORD</th>';
+      sh+='<th style="background:#faf9f6;color:#aaa;font-size:9px">LW WASTE</th>';
+      sh+='<th style="background:#faf5e8;color:#3D4A35;font-weight:700;font-size:9px">REC</th>';
     });
-
     var rows=skus.map(function(sku){
       var cells='';
       DAYS.forEach(function(day,i){
-        var date=addDays(mon,i);
         var ldate=addDays(lmon,i);
         var info=(rM[sku]&&rM[sku][day])||{rec:0,rule:'hold'};
         var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
         var lww=(lwM[sku]&&lwM[sku][ldate]!==undefined)?lwM[sku][ldate]:'-';
-        var wc=lww!=='-'&&lww>0?'waste-hi':'waste-num';
-        var recStyle=info.rule==='sold_out'?'color:#3a6910':info.rule==='waste'?'color:#a02c2c':'';
+        var wc=lww!=='-'&&+lww>0?'waste-hi':'lw-num';
+        var recColor=info.rule==='sold_out'?'#3a6910':info.rule==='waste'?'#a02c2c':'#1a1a1a';
         cells+='<td class="day-sep lw-num">'+lwo+'</td>';
         cells+='<td class="'+wc+'">'+lww+'</td>';
-        cells+='<td style="background:#faf5e8"><span class="rec-num" style="'+recStyle+'">'+info.rec+'</span></td>';
+        cells+='<td style="background:#faf5e8"><span class="rec-num" style="color:'+recColor+'">'+info.rec+'</span></td>';
       });
       return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
     }).join('');
-
     return '<table class="otable"><thead><tr>'+dh+'</tr><tr>'+sh+'</tr></thead><tbody>'+rows+'</tbody></table>';
   }
 
   var html='';
-  if(dSkus.length){
-    html+='<div class="section"><div class="section-title">Doughnuts \u2014 Red Rose <small>Supplier: Red Rose Bakery</small></div><div class="tbl-wrap">'+buildOrderTable(dSkus)+'</div></div>';
-  }
-  if(pSkus.length){
-    html+='<div class="section"><div class="section-title">Pastries \u2014 Galeta <small>Supplier: Galeta</small></div><div class="tbl-wrap">'+buildOrderTable(pSkus)+'</div></div>';
-  }
+  if(dSkus.length) html+='<div class="section"><div class="section-title">Doughnuts \u2014 Red Rose <small>Supplier: Red Rose Bakery</small></div><div class="tbl-wrap">'+buildOrderTable(dSkus)+'</div></div>';
+  if(pSkus.length) html+='<div class="section"><div class="section-title">Pastries \u2014 Galeta <small>Supplier: Galeta</small></div><div class="tbl-wrap">'+buildOrderTable(pSkus)+'</div></div>';
   document.getElementById('order-content').innerHTML=html||'<div class="ld">No data</div>';
 }
 
 // ── ANALYSIS TAB ───────────────────────────────────────────
-function init(){
-  var today=new Date().toISOString().split('T')[0];
-  var mon=getMonday(today);
-  var sel=document.getElementById('week-pick');
-  var weeks=[addDays(mon,7),mon];
-  for(var i=1;i<=12;i++) weeks.push(addDays(mon,i*-7));
-  weeks.forEach(function(w){
-    var o=document.createElement('option');
-    o.value=w;
-    var lbl=fmt(w)+' \u2013 '+fmt(addDays(w,6));
-    if(w===mon) lbl='This week: '+lbl;
-    else if(w===addDays(mon,-7)) lbl='Last week: '+lbl;
-    else if(w===addDays(mon,7)) lbl='Next week: '+lbl;
-    o.textContent=lbl;
-    if(w===mon) o.selected=true;
-    sel.appendChild(o);
-  });
-  document.getElementById('meta').textContent='w/c '+fmt(mon)+' \u2013 '+fmt(addDays(mon,6));
-  loadOrder();
-  load();
-}
-
 async function load(){
   var mon=document.getElementById('week-pick').value;
   if(!mon) return;
@@ -447,7 +461,6 @@ async function load(){
     if(rule==='waste') return '<span class="badge b-wt">-10%</span>';
     return '<span class="badge b-hd">hold</span>';
   }
-
   function buildSection(title,sub,skus){
     if(!skus.length) return '';
     var dh='';var sh='';
@@ -456,11 +469,8 @@ async function load(){
       var hasOrders=Object.keys(oM).some(function(s){return oM[s]&&oM[s][date]!==undefined;});
       var past=date<today&&hasOrders;
       dh+='<th colspan="'+(past?6:7)+'" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
-      if(past){
-        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Ord</th><th>Sold</th><th>Waste</th><th>&Delta; Rec</th>';
-      } else {
-        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>4w Sold</th><th>4w Ordered</th><th>4w Waste</th><th>Rule</th><th>Rec</th>';
-      }
+      if(past) sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Ord</th><th>Sold</th><th>Waste</th><th>&Delta; Rec</th>';
+      else sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>4w Sold</th><th>4w Ordered</th><th>4w Waste</th><th>Rule</th><th>Rec</th>';
     });
     var rows=skus.map(function(sku){
       var cells='';
@@ -488,7 +498,6 @@ async function load(){
     }).join('');
     return '<div class="section"><div class="section-title">'+title+' <small>'+sub+'</small></div><div class="tbl-wrap"><table><thead><tr><th class="skuh" rowspan="2" style="min-width:140px;vertical-align:middle">SKU</th>'+dh+'</tr><tr>'+sh+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   }
-
   document.getElementById('content').innerHTML=
     buildSection('DOUGHNUTS \u2014 RED ROSE','Supplier: Red Rose Bakery',dSkus)+
     buildSection('PASTRIES \u2014 GALETA','Supplier: Galeta',pSkus);
@@ -656,7 +665,9 @@ function setStatus(type,cls,msg){
 }
 setupDrop('sales');
 setupDrop('orders');
-init();
+initWeekPickers();
+loadOrder();
+load();
 </script>
 </body>
 </html>
