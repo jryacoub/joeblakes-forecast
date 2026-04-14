@@ -35,12 +35,6 @@ tr:last-child td{border-bottom:none}
 tr:hover td{background:#faf9f6}
 .pos{color:#3a6910;font-weight:600}
 .neg{color:#a02c2c;font-weight:600}
-.badge{display:inline-block;font-size:9px;padding:2px 5px;border-radius:3px;font-weight:600}
-.bup{background:#e8f3dc;color:#3a6910}
-.bdn{background:#fce8e8;color:#a02c2c}
-.bfl{background:#f0ede5;color:#888}
-.wbup{background:#fce8e8;color:#a02c2c}
-.wbdn{background:#e8f3dc;color:#3a6910}
 .lw{color:#aaa;font-size:11px}
 .stepper{display:flex;align-items:center;border:0.5px solid #c8c4bc;border-radius:5px;overflow:hidden;width:90px;margin:0 auto}
 .stepper button{background:#f5f3ef;border:none;width:24px;height:28px;font-size:14px;cursor:pointer;color:#3D4A35;font-weight:600;flex-shrink:0}
@@ -107,7 +101,6 @@ input[type=file]{display:none}
 .full-sug{padding:6px 12px;background:#fff;border:0.5px solid #c8c4bc;border-radius:20px;font-size:11px;color:#3D4A35;cursor:pointer}
 .full-sug:hover{background:#f0ede5}
 .full-suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.ai-adj{color:#C9A84C;font-size:10px;font-style:italic}
 </style>
 </head>
 <body>
@@ -139,17 +132,16 @@ input[type=file]{display:none}
 <div id="pane-chat" style="display:none">
 <div class="wrap">
   <div class="chat-wrap">
-    <div class="chat-context"><strong>Context:</strong> AI has access to 4w sales, 4w orders, 4w Edify waste, sell-out flags, waste trend and smart recs.</div>
+    <div class="chat-context"><strong>Context:</strong> AI has access to 4w sales, 4w orders, 4w waste and recs.</div>
     <div class="full-suggestions">
-      <div class="full-sug" onclick="askFull(this)">Which SKUs had high waste this week?</div>
+      <div class="full-sug" onclick="askFull(this)">Which SKUs had high waste?</div>
       <div class="full-sug" onclick="askFull(this)">Did anything sell out last week?</div>
-      <div class="full-sug" onclick="askFull(this)">Where is waste getting worse?</div>
-      <div class="full-sug" onclick="askFull(this)">What should I order more of on Saturday?</div>
       <div class="full-sug" onclick="askFull(this)">Which SKUs are we over-ordering?</div>
+      <div class="full-sug" onclick="askFull(this)">What should I order more of on Saturday?</div>
     </div>
     <div class="chat-full-messages" id="full-messages"></div>
     <div class="chat-full-input-row">
-      <textarea class="chat-full-input" id="full-input" placeholder="Ask anything about orders, sales, trends or waste..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFull();}"></textarea>
+      <textarea class="chat-full-input" id="full-input" placeholder="Ask anything about orders, sales or waste..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFull();}"></textarea>
       <button class="chat-full-send" id="full-send" onclick="sendFull()">Send</button>
     </div>
   </div>
@@ -216,8 +208,8 @@ input[type=file]{display:none}
   <div class="chat-suggestions">
     <div class="sug" onclick="askPopup(this)">High waste SKUs?</div>
     <div class="sug" onclick="askPopup(this)">Sold out last week?</div>
-    <div class="sug" onclick="askPopup(this)">Saturday advice?</div>
     <div class="sug" onclick="askPopup(this)">Over-ordering?</div>
+    <div class="sug" onclick="askPopup(this)">Saturday advice?</div>
   </div>
   <div class="chat-messages" id="popup-messages"></div>
   <div class="chat-input-row">
@@ -258,23 +250,6 @@ async function get(p){try{var r=await fetch(BASE+p,{headers:H});return await r.j
 function getMonday(d){var dt=new Date(d);dt.setDate(dt.getDate()-((dt.getDay()+6)%7));return dt.toISOString().split('T')[0];}
 function addDays(d,n){var dt=new Date(d+'T12:00:00');dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
 function fmt(d){return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
-
-function trendBadge(tf){
-  if(tf>1.05) return '<span class="badge bup">+'+((tf-1)*100).toFixed(0)+'%</span>';
-  if(tf<0.95) return '<span class="badge bdn">-'+((1-tf)*100).toFixed(0)+'%</span>';
-  return '<span class="badge bfl">flat</span>';
-}
-function wasteTrendBadge(pct){
-  if(pct===null||pct===undefined) return '<span class="badge bfl">—</span>';
-  if(pct>10) return '<span class="badge wbup">+'+Math.round(pct)+'%</span>';
-  if(pct<-10) return '<span class="badge wbdn">'+Math.round(pct)+'%</span>';
-  return '<span class="badge bfl">flat</span>';
-}
-function recBadge(soldOut,wastePct){
-  if(soldOut) return '<span class="badge bup">+15% sold out</span>';
-  if(wastePct>=10) return '<span class="badge bdn">-10% waste</span>';
-  return '<span class="badge bfl">hold</span>';
-}
 function avgForSku(sku,rM){
   if(!rM[sku]) return 0;
   var vals=Object.values(rM[sku]);
@@ -316,7 +291,7 @@ async function load(){
   var sales=await get('/jb_sales?select=sku,qty,date&date=gte.'+mon+'&date=lte.'+sun+'&limit=1000');
   var lorders=await get('/jb_orders?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
   var lsales=await get('/jb_sales?select=sku,qty,date&date=gte.'+lmon+'&date=lte.'+lsun+'&limit=1000');
-  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold_4w,avg_sold_8w,avg_ordered_4w,avg_waste_4w,waste_rate_pct,waste_trend_pct,sold_out_lw,trend_factor4,trend_factor8&limit=1000');
+  var recs=await get('/jb_forecast?select=sku,dow,rec_edify,avg_sold_4w,avg_ordered_4w,avg_waste_4w,waste_rate_pct,sold_out_lw&limit=1000');
 
   var oM={},sM={},loM={},lsM={},rM={};
   orders.forEach(function(r){if(!oM[r.sku])oM[r.sku]={};oM[r.sku][r.date]=+r.qty;});
@@ -328,14 +303,10 @@ async function load(){
     rM[r.sku][r.dow]={
       rec:+r.rec_edify,
       avg:+r.avg_sold_4w,
-      avg8:+r.avg_sold_8w,
       avgOrd:+r.avg_ordered_4w,
-      waste4w:+r.avg_waste_4w,
+      waste:+r.avg_waste_4w,
       wpct:+r.waste_rate_pct,
-      wtrend:r.waste_trend_pct!==null?+r.waste_trend_pct:null,
-      soldOut:r.sold_out_lw===true||r.sold_out_lw==='true',
-      tf4:+r.trend_factor4,
-      tf8:+r.trend_factor8
+      soldOut:r.sold_out_lw===true||r.sold_out_lw==='true'
     };
   });
 
@@ -351,12 +322,12 @@ async function load(){
     DAYS.forEach(function(day,i){
       var date=addDays(mon,i);
       var past=date<today;
-      var cols=past?8:10;
+      var cols=past?6:6;
       dh+='<th colspan="'+cols+'" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
       if(past){
-        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>LW Waste</th><th>Ord</th><th>Sold</th><th>4w Trend</th><th>8w Trend</th><th>&Delta; Rec</th>';
+        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Ord</th><th>Sold</th><th>Waste</th><th>&Delta; Rec</th>';
       } else {
-        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>4w Avg Sold</th><th>4w Avg Ord</th><th>4w Trend</th><th>4w Waste</th><th>Waste Trend</th><th>Rule</th><th>Mgr Order</th><th style="color:#C9A84C">AI Adj</th>';
+        sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>4w Sold</th><th>4w Ordered</th><th>4w Waste</th><th>Rec</th>';
       }
     });
 
@@ -366,7 +337,7 @@ async function load(){
         var date=addDays(mon,i);
         var ldate=addDays(lmon,i);
         var past=date<today;
-        var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,avg8:0,avgOrd:0,waste4w:0,wpct:0,wtrend:null,soldOut:false,tf4:1,tf8:1};
+        var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,avgOrd:0,waste:0,wpct:0,soldOut:false};
         var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
         var lws=(lsM[sku]&&lsM[sku][ldate]!==undefined)?lsM[sku][ldate]:'-';
         if(past){
@@ -376,12 +347,9 @@ async function load(){
           var delta=(info.rec&&ord!=='-')?(ord-info.rec):null;
           var dc=delta===null?'':delta>0?' class="pos"':delta<0?' class="neg"':'';
           var ds=delta===null?'-':delta>0?'+'+delta:String(delta);
-          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+lww+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+trendBadge(info.tf4)+'</td><td>'+trendBadge(info.tf8)+'</td><td'+dc+'>'+ds+'</td>';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+ord+'</td><td>'+sol+'</td><td>'+lww+'</td><td'+dc+'>'+ds+'</td>';
         } else {
-          var avgSold=info.avg?info.avg.toFixed(1):'-';
-          var avgOrd=info.avgOrd?info.avgOrd.toFixed(1):'-';
-          var wasteVol=info.waste4w?info.waste4w.toFixed(1):'0';
-          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+avgSold+'</td><td>'+avgOrd+'</td><td>'+trendBadge(info.tf4)+'</td><td>'+wasteVol+'</td><td>'+wasteTrendBadge(info.wtrend)+'</td><td>'+recBadge(info.soldOut,info.wpct)+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td><td class="ai-adj">—</td>';
+          cells+='<td style="border-left:2px solid #eee" class="lw">'+lwo+'</td><td class="lw">'+lws+'</td><td>'+(info.avg?info.avg.toFixed(1):'-')+'</td><td>'+(info.avgOrd?info.avgOrd.toFixed(1):'-')+'</td><td>'+(info.waste?info.waste.toFixed(1):'0')+'</td><td><div class="stepper"><button data-dir="-1">&#8722;</button><input type="number" value="'+info.rec+'"/><button data-dir="1">+</button></div></td>';
         }
       });
       return '<tr><td class="sku">'+sku+'</td>'+cells+'</tr>';
