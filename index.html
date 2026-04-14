@@ -321,9 +321,10 @@ async function load(){
     var dh='';var sh='';
     DAYS.forEach(function(day,i){
       var date=addDays(mon,i);
-      var past=date<today;
-      var cols=past?6:6;
-      dh+='<th colspan="'+cols+'" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
+      // A day is ACTUAL only if it's strictly before today AND has order data for at least one SKU
+      var hasOrders=skus.some(function(s){return oM[s]&&oM[s][date]!==undefined;});
+      var past=date<today&&hasOrders;
+      dh+='<th colspan="6" style="border-left:2px solid #c8c4bc">'+day.slice(0,3)+' '+fmt(date)+' <span style="opacity:0.4;font-size:9px">'+(past?'ACTUAL':'FORECAST')+'</span></th>';
       if(past){
         sh+='<th style="border-left:2px solid #c8c4bc">LW Ord</th><th>LW Sold</th><th>Ord</th><th>Sold</th><th>Waste</th><th>&Delta; Rec</th>';
       } else {
@@ -336,7 +337,8 @@ async function load(){
       DAYS.forEach(function(day,i){
         var date=addDays(mon,i);
         var ldate=addDays(lmon,i);
-        var past=date<today;
+        var hasOrders=skus.some(function(s){return oM[s]&&oM[s][date]!==undefined;});
+        var past=date<today&&hasOrders;
         var info=(rM[sku]&&rM[sku][day])||{rec:0,avg:0,avgOrd:0,waste:0,wpct:0,soldOut:false};
         var lwo=(loM[sku]&&loM[sku][ldate]!==undefined)?loM[sku][ldate]:'-';
         var lws=(lsM[sku]&&lsM[sku][ldate]!==undefined)?lsM[sku][ldate]:'-';
